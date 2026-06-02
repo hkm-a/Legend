@@ -1,0 +1,46 @@
+[gd_scene load_steps=2 format=3 uid="uid://player_scene"]
+
+[ext_resource type="Script" path="res://scripts/player_controller.gd" id="1_player_controller"]
+
+[node name="Player" type="CharacterBody2D"]
+y_sort_enabled = true
+script = ExtResource("1_player_controller")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+position = Vector2(0, -28)
+texture_filter = 0
+
+[node name="Body" type="Polygon2D" parent="Sprite2D"]
+color = Color(0.37, 0.45, 0.62, 1)
+polygon = PackedVector2Array(0, -42, 19, -18, 14, 16, 0, 28, -14, 16, -19, -18)
+
+[node name="Cape" type="Polygon2D" parent="Sprite2D"]
+position = Vector2(0, 2)
+color = Color(0.35, 0.04, 0.04, 0.95)
+polygon = PackedVector2Array(-15, -20, 15, -20, 24, 30, -24, 30)
+
+[node name="Head" type="Polygon2D" parent="Sprite2D"]
+position = Vector2(0, -50)
+color = Color(0.72, 0.58, 0.45, 1)
+polygon = PackedVector2Array(0, -14, 13, -7, 12, 8, 0, 16, -12, 8, -13, -7)
+
+[node name="SwordGlow" type="Line2D" parent="Sprite2D"]
+points = PackedVector2Array(18, -25, 43, -62)
+width = 4.0
+default_color = Color(0.95, 0.72, 0.28, 0.85)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+
+[node name="NameLabel" type="Label" parent="."]
+position = Vector2(-36, -106)
+size = Vector2(72, 23)
+horizontal_alignment = 1
+
+[node name="HealthBack" type="ColorRect" parent="."]
+position = Vector2(-28, -78)
+size = Vector2(56, 6)
+color = Color(0.12, 0.02, 0.02, 0.9)
+
+[node name="HealthFill" type="ColorRect" parent="HealthBack"]
+size = Vector2(56, 6)
+color = Color(0.75, 0.08, 0.04, 1)

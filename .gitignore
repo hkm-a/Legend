@@ -1,0 +1,49 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Secrets / local config
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+hosts.yml
+
+# Claude/session runtime logs
+production/session-logs/
+
+# Godot generated cache/import artifacts
+**/.godot/
+**/.import/
+*.tmp
+
+# Build outputs
+**/bin/
+**/obj/
+**/build/
+**/dist/
+**/out/
+OpenMir2-build/
+
+# Downloaded archives / external source snapshots
+downloads/
+OpenMir2/
+MirServer/
+Crystal/
+mir2x/
+mir2x-v0.0.12/
+mir2x-v0.0.12-code/
+mir2x-v0.0.12-src/
+mir2x_data_test/
+install/
+
+# Godot imports generated from source assets
+*.import
+*.ctex
+*.md5
