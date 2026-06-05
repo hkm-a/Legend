@@ -50,32 +50,32 @@ func validate_request(headers: Dictionary) -> bool:
 	# 如果认证未启用，直接通过
 	if not _enabled:
 		return true
-	
+
 	# 检查是否存在 Authorization 头
 	if not headers.has(HEADER_NAME):
 		return false  # 缺少认证头
-	
+
 	var auth_header: String = headers[HEADER_NAME]
-	
+
 	# 检查格式：Bearer <token>
 	if not auth_header.begins_with(SCHEME + " "):
 		return false  # 格式错误
-	
+
 	# 提取 token
 	var token: String = auth_header.substr(SCHEME.length() + 1)
-	
+
 	var result: bool = true
 	var max_len: int = maxi(token.length(), _token.length())
-	
+
 	for i in range(max_len):
 		var token_char: String = token[i] if i < token.length() else ""
 		var stored_char: String = _token[i] if i < _token.length() else ""
 		if token_char != stored_char:
 			result = false
-	
+
 	if token.length() != _token.length():
 		result = false
-	
+
 	return result
 
 ## 返回 WWW-Authenticate 头（用于 401 响应）
@@ -89,9 +89,9 @@ func get_www_authenticate_header() -> String:
 static func generate_token(length: int = 32) -> String:
 	var chars: String = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 	var token: String = ""
-	
+
 	for i in range(length):
 		var idx: int = randi() % chars.length()
 		token += chars[idx]
-	
+
 	return token

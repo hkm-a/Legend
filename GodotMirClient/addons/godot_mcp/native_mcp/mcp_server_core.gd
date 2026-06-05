@@ -126,7 +126,7 @@ func _init_transport() -> bool:
 			if _transport.has_method("set_log_callback"):
 				_transport.set_log_callback(_log_transport_message)
 			_log_info("Initialized stdio transport")
-		
+
 		TransportType.TRANSPORT_HTTP:
 			_transport = McpHttpServer.new()
 			_transport.set_port(_http_port)
@@ -135,11 +135,11 @@ func _init_transport() -> bool:
 			if _transport.has_method("set_log_callback"):
 				_transport.set_log_callback(_log_transport_message)
 			_log_info("Initialized HTTP transport on port " + str(_http_port))
-		
+
 		_:
 			_log_error("Unknown transport type: " + str(_transport_type))
 			return false
-	
+
 	# 连接信号（使用 lambda 启动协程，支持异步工具执行）
 	_transport.message_received.connect(func(message: Dictionary, context: Variant):
 		_on_transport_message_received(message, context)
@@ -147,7 +147,7 @@ func _init_transport() -> bool:
 	_transport.server_error.connect(_on_transport_error)
 	_transport.server_started.connect(_on_transport_started)
 	_transport.server_stopped.connect(_on_transport_stopped)
-	
+
 	_log_info("Transport layer initialized: " + str(_transport_type))
 	return true
 
@@ -157,22 +157,22 @@ func _init_transport() -> bool:
 func _on_transport_message_received(message: Dictionary, context: Variant) -> void:
 	# 验证消息格式
 	if not message.has("jsonrpc"):
-		_send_error(null, MCPTypes.ERROR_INVALID_REQUEST, 
+		_send_error(null, MCPTypes.ERROR_INVALID_REQUEST,
 				   "Missing 'jsonrpc' field. Please ensure the message is a valid JSON-RPC 2.0 message.")
 		return
-	
+
 	if message["jsonrpc"] != JSONRPC_VERSION:
-		_send_error(message.get("id"), MCPTypes.ERROR_INVALID_REQUEST, 
+		_send_error(message.get("id"), MCPTypes.ERROR_INVALID_REQUEST,
 				   "Invalid JSON-RPC version. Expected '2.0', got: " + str(message["jsonrpc"]))
 		return
-	
+
 	# 记录收到的消息
 	message_received.emit(message)
 	_log_debug("Received message: " + JSON.stringify(message))
-	
+
 	# 处理请求
 	var response: Dictionary = {}
-	
+
 	if message.has("method"):
 		# 这是一个请求或通知
 		response = await _handle_request(message)
@@ -180,7 +180,7 @@ func _on_transport_message_received(message: Dictionary, context: Variant) -> vo
 		# 这是一个响应（通常不需要处理）
 		_log_warn("Received unexpected response message: " + JSON.stringify(message))
 		return
-	
+
 	# 发送响应（如果有）
 	if response:
 		_send_response(response, context)
@@ -209,25 +209,25 @@ func start() -> bool:
 	if _active:
 		_log_warn("Server already running")
 		return false
-	
+
 	_log_info("Starting MCP Server (transport: " + str(_transport_type) + ")...")
-	
+
 	# 初始化传输层
 	if not _init_transport():
 		_log_error("Failed to initialize transport layer")
 		return false
-	
+
 	# 启动传输层
 	var success: bool = _transport.start()
-	
+
 	if not success:
 		_log_error("Failed to start transport layer")
 		return false
-	
+
 	if _classifier == null:
 		_classifier = load("res://addons/godot_mcp/native_mcp/mcp_tool_classifier.gd").new()
 		_log_info("Tool classifier initialized")
-	
+
 	if _state_manager == null:
 		_state_manager = load("res://addons/godot_mcp/native_mcp/tool_state_manager.gd").new()
 		_log_info("Tool state manager initialized")
@@ -235,23 +235,23 @@ func start() -> bool:
 		if not saved_states.is_empty():
 			_state_manager.apply_states_to_server(self, saved_states)
 			_log_info("Applied saved tool states: " + str(saved_states.size()) + " tools")
-	
+
 	_active = true
 	_log_info("MCP Server started successfully (transport: " + str(_transport_type) + ")")
-	
+
 	return true
 
 func stop() -> void:
 	if not _active:
 		return
-	
+
 	_log_info("Stopping MCP Server...")
-	
+
 	# 停止传输层
 	if _transport:
 		_transport.stop()
 		_transport = null
-	
+
 	_active = false
 	_log_info("MCP Server stopped")
 
@@ -268,39 +268,39 @@ func _handle_request(message: Dictionary) -> Dictionary:
 	var method: String = message.get("method", "")
 	var id: Variant = message.get("id", null)
 	var params: Dictionary = message.get("params", {})
-	
+
 	# 速率限制检查
 	if not _check_rate_limit("default"):
 		return MCPTypes.create_error_response(id, MCPTypes.ERROR_INTERNAL_ERROR, "Rate limit exceeded")
-	
+
 	match method:
 		MCPTypes.METHOD_INITIALIZE:
 			return _handle_initialize(message)
-		
+
 		MCPTypes.METHOD_NOTIFICATIONS_INITIALIZED:
 			return _handle_initialized_notification(message)
-		
+
 		MCPTypes.METHOD_TOOLS_LIST:
 			return _handle_tools_list(message)
-		
+
 		MCPTypes.METHOD_TOOLS_CALL:
 			return await _handle_tool_call(message)
-		
+
 		MCPTypes.METHOD_RESOURCES_LIST:
 			return _handle_resources_list(message)
-		
+
 		MCPTypes.METHOD_RESOURCES_READ:
 			return await _handle_resource_read(message)
-		
+
 		MCPTypes.METHOD_RESOURCES_SUBSCRIBE:
 			return _handle_resource_subscribe(message)
-		
+
 		MCPTypes.METHOD_PROMPTS_LIST:
 			return _handle_prompts_list(message)
-		
+
 		MCPTypes.METHOD_PROMPTS_GET:
 			return _handle_prompt_get(message)
-		
+
 		_:
 			_log_warn("Method not found: " + method)
 			return MCPTypes.create_error_response(id, MCPTypes.ERROR_METHOD_NOT_FOUND, "Method not found: " + method)
@@ -314,12 +314,12 @@ func _handle_initialize(message: Dictionary) -> Dictionary:
 	var params: Dictionary = message.get("params", {})
 	var client_capabilities: Dictionary = params.get("capabilities", {})
 	var client_protocol_version: String = params.get("protocolVersion", PROTOCOL_VERSION)
-	
+
 	_log_info("Initialize request from client. Protocol: " + client_protocol_version)
 	_log_debug("Client capabilities: " + JSON.stringify(client_capabilities))
-	
+
 	var negotiated_version: String = _negotiate_protocol_version(client_protocol_version)
-	
+
 	var result: Dictionary = {
 		"protocolVersion": negotiated_version,
 		"capabilities": MCPTypes.create_capabilities(true, true, true, true),
@@ -328,10 +328,10 @@ func _handle_initialize(message: Dictionary) -> Dictionary:
 			"version": "2.0.0"
 		}
 	}
-	
+
 	var response: Dictionary = MCPTypes.create_response(id, result)
 	_log_debug("Initialize response: " + JSON.stringify(response))
-	
+
 	return response
 
 func _negotiate_protocol_version(client_version: String) -> String:
@@ -341,14 +341,14 @@ func _negotiate_protocol_version(client_version: String) -> String:
 		"2025-03-26",
 		"2024-11-05",
 	]
-	
+
 	if client_version in supported_versions:
 		return client_version
-	
+
 	for version in supported_versions:
 		if version == PROTOCOL_VERSION:
 			return version
-	
+
 	return supported_versions[0]
 
 func _handle_initialized_notification(message: Dictionary) -> Dictionary:
@@ -358,15 +358,15 @@ func _handle_initialized_notification(message: Dictionary) -> Dictionary:
 
 func _handle_tools_list(message: Dictionary) -> Dictionary:
 	var id: Variant = message.get("id")
-	
+
 	# 构建工具列表（根据mcp-builder，包含annotations和outputSchema）
 	var tools_list: Array[Dictionary] = []
-	
+
 	for tool_name in _tools:
 		var tool: MCPTypes.MCPTool = _tools[tool_name]
 		if tool and tool.is_valid() and tool.enabled:
 			tools_list.append(tool.to_dict())
-	
+
 	var result: Dictionary = {"tools": tools_list}
 	var response: Dictionary = MCPTypes.create_response(id, result)
 
@@ -381,10 +381,10 @@ func _handle_tool_call(message: Dictionary) -> Dictionary:
 	var params: Dictionary = message.get("params", {})
 	var tool_name: String = params.get("name", "")
 	var arguments: Dictionary = params.get("arguments", {})
-	
+
 	_log_info("Tool call: " + tool_name)
 	_log_debug("Tool arguments: " + JSON.stringify(arguments))
-	
+
 	# 检查工具是否存在
 	if not _tools.has(tool_name):
 		_log_error("Tool not found: " + tool_name)
@@ -396,9 +396,9 @@ func _handle_tool_call(message: Dictionary) -> Dictionary:
 			"isError": true
 		}
 		return MCPTypes.create_response(id, error_result)
-	
+
 	var tool: MCPTypes.MCPTool = _tools[tool_name]
-	
+
 	if not tool.enabled:
 		_log_error("Tool is disabled: " + tool_name)
 		var error_result: Dictionary = {
@@ -409,24 +409,24 @@ func _handle_tool_call(message: Dictionary) -> Dictionary:
 			"isError": true
 		}
 		return MCPTypes.create_response(id, error_result)
-	
+
 	# 发送开始信号
 	tool_execution_started.emit(tool_name, arguments)
-	
+
 	# 执行工具
 	var result: Variant = null
 	var error: String = ""
-	
+
 	if tool.callable.is_valid():
 		# 使用Callable调用工具（await 支持异步工具执行）
 		var status: Error = OK
-		
+
 		# 捕获执行错误
 		if status == OK:
 			result = await tool.callable.call(arguments)
 		else:
 			error = "Tool execution failed with error: " + str(status)
-	
+
 	# 处理执行结果
 	if not error.is_empty():
 		_log_error("Tool execution failed: " + tool_name + " - " + error)
@@ -439,7 +439,7 @@ func _handle_tool_call(message: Dictionary) -> Dictionary:
 			"isError": true
 		}
 		return MCPTypes.create_response(id, error_result)
-	
+
 	var has_error: bool = result is Dictionary and result.has("error")
 
 	var response_result: Dictionary = {
@@ -452,60 +452,60 @@ func _handle_tool_call(message: Dictionary) -> Dictionary:
 
 	if not has_error and tool.output_schema.size() > 0:
 		response_result["structuredContent"] = result
-	
+
 	var response: Dictionary = MCPTypes.create_response(id, response_result)
-	
+
 	_append_tool_log(tool_name, result, error)
-	
+
 	# 发送完成信号
 	tool_execution_completed.emit(tool_name, result)
 	_log_info("Tool execution completed: " + tool_name)
-	
+
 	return response
 
 func _handle_resources_list(message: Dictionary) -> Dictionary:
 	var id: Variant = message.get("id")
-	
+
 	_log_info("Resources list requested. Available resources: " + str(_resources.size()))
-	
+
 	# 构建资源列表（根据mcp-builder，包含description）
 	var resources_list: Array[Dictionary] = []
-	
+
 	for uri in _resources:
 		var resource: MCPTypes.MCPResource = _resources[uri]
 		if resource and resource.is_valid():
 			resources_list.append(resource.to_dict())
-	
+
 	var result: Dictionary = {"resources": resources_list}
 	var response: Dictionary = MCPTypes.create_response(id, result)
-	
+
 	_log_debug("Resources list response: " + JSON.stringify(response))
-	
+
 	return response
 
 func _handle_resource_read(message: Dictionary) -> Dictionary:
 	var id: Variant = message.get("id")
 	var params: Dictionary = message.get("params", {})
 	var uri: String = params.get("uri", "")
-	
+
 	_log_info("Resource read: " + uri)
-	
+
 	# 检查资源是否存在
 	if not _resources.has(uri):
 		_log_error("Resource not found: " + uri)
 		return MCPTypes.create_error_response(id, MCPTypes.ERROR_RESOURCE_NOT_FOUND, "Resource not found: " + uri)
-	
+
 	var resource: MCPTypes.MCPResource = _resources[uri]
-	
+
 	resource_requested.emit(uri, params)
-	
+
 	var content: Dictionary = {}
-	
+
 	if resource.load_callable.is_valid():
 		content = await resource.load_callable.call(params)
-	
+
 	var result: Dictionary = {}
-	
+
 	if content.has("contents"):
 		result = content
 	else:
@@ -516,69 +516,69 @@ func _handle_resource_read(message: Dictionary) -> Dictionary:
 				"text": content.get("text", JSON.stringify(content))
 			}]
 		}
-	
+
 	var response: Dictionary = MCPTypes.create_response(id, result)
-	
+
 	# 发送资源加载信号
 	resource_loaded.emit(uri, content)
 	_log_info("Resource loaded: " + uri)
-	
+
 	return response
 
 func _handle_resource_subscribe(message: Dictionary) -> Dictionary:
 	var id: Variant = message.get("id")
 	var params: Dictionary = message.get("params", {})
 	var uri: String = params.get("uri", "")
-	
+
 	_log_info("Resource subscribe: " + uri)
-	
+
 	# TODO: 实现资源订阅逻辑
 	var result: Dictionary = {"subscriptionId": MCPTypes.generate_id()}
 	var response: Dictionary = MCPTypes.create_response(id, result)
-	
+
 	return response
 
 func _handle_prompts_list(message: Dictionary) -> Dictionary:
 	var id: Variant = message.get("id")
-	
+
 	_log_info("Prompts list requested")
-	
+
 	var prompts_list: Array[Dictionary] = []
-	
+
 	for prompt_name in _prompts:
 		var prompt: MCPTypes.MCPPrompt = _prompts[prompt_name]
 		if prompt and prompt.is_valid():
 			prompts_list.append(prompt.to_dict())
-	
+
 	var result: Dictionary = {"prompts": prompts_list}
 	var response: Dictionary = MCPTypes.create_response(id, result)
-	
+
 	return response
 
 func _handle_prompt_get(message: Dictionary) -> Dictionary:
 	var id: Variant = message.get("id")
 	var params: Dictionary = message.get("params", {})
 	var prompt_name: String = params.get("name", "")
-	
+
 	_log_info("Prompt get: " + prompt_name)
-	
+
 	# TODO: 实现prompt获取逻辑
 	var result: Dictionary = {
 		"description": "Prompt: " + prompt_name,
 		"messages": []
 	}
-	
+
 	var response: Dictionary = MCPTypes.create_response(id, result)
-	
+
 	return response
 
 # ============================================================================
 # 工具注册API（优化版 - 根据mcp-builder）
 # ============================================================================
 
-func register_tool(name: String, description: String, 
+func register_tool(name: String, description: String,
 				  input_schema: Dictionary, callable: Callable,
-				  output_schema: Dictionary = {}, 
+				  output_schema: Dictionary = {},
 				  annotations: Dictionary = {},
 				  category: String = "core",
 				  group: String = "") -> void:
@@ -592,7 +592,7 @@ func register_tool(name: String, description: String,
 	tool.category = category
 	tool.group = group
 	tool.enabled = (category == "core")
-	
+
 	if not tool.is_valid():
 		var reason: String = "unknown"
 		if name.is_empty():
@@ -604,7 +604,7 @@ func register_tool(name: String, description: String,
 		_log_error("Invalid tool definition: " + name + " (reason: " + reason + ")")
 		printerr("[MCP][DIAG] Tool '%s' rejected: callable.is_valid()=%s, callable=%s" % [name, str(callable.is_valid()), str(callable)])
 		return
-	
+
 	_tools[name] = tool
 	_log_info("Tool registered: " + name)
 
@@ -715,7 +715,7 @@ func has_tool(name: String) -> bool:
 # 资源注册API（优化版 - 根据mcp-builder）
 # ============================================================================
 
-func register_resource(uri: String, name: String, 
+func register_resource(uri: String, name: String,
 					  mime_type: String, load_callable: Callable,
 					  description: String = "") -> void:  # 新增description参数
 	# 创建资源对象
@@ -725,12 +725,12 @@ func register_resource(uri: String, name: String,
 	resource.description = description  # 新增（根据mcp-builder）
 	resource.mime_type = mime_type
 	resource.load_callable = load_callable
-	
+
 	# 验证资源定义
 	if not resource.is_valid():
 		_log_error("Invalid resource definition: " + uri)
 		return
-	
+
 	_resources[uri] = resource
 	_log_info("Resource registered: " + uri)
 
@@ -749,14 +749,14 @@ func get_all_resources() -> Dictionary:
 # Prompt注册API
 # ============================================================================
 
-func register_prompt(name: String, description: String, 
-					 arguments: Array[Dictionary], 
+func register_prompt(name: String, description: String,
+					 arguments: Array[Dictionary],
 					 get_callable: Callable) -> void:
 	var prompt: MCPTypes.MCPPrompt = MCPTypes.MCPPrompt.new()
 	prompt.name = name
 	prompt.description = description
 	prompt.arguments = arguments
-	
+
 	_prompts[name] = prompt
 	_log_info("Prompt registered: " + name)
 
@@ -766,12 +766,12 @@ func register_prompt(name: String, description: String,
 
 func _send_response(response: Dictionary, context: Variant = null) -> void:
 	var json_string: String = JSON.stringify(response)
-	
+
 	if _transport_type == TransportType.TRANSPORT_STDIO:
 		print(json_string)
 	elif _transport_type == TransportType.TRANSPORT_HTTP:
 		_transport.send_response(response, context)
-	
+
 	response_sent.emit(response)
 
 func _send_error(id: Variant, code: int, message: String, data: Variant = null) -> void:
@@ -784,28 +784,28 @@ func _send_error(id: Variant, code: int, message: String, data: Variant = null) 
 
 func _check_rate_limit(client_id: String) -> bool:
 	var current_time: int = Time.get_unix_time_from_system()
-	
+
 	if not _request_timestamps.has(client_id):
 		var new_timestamps: Array[int] = []
 		_request_timestamps[client_id] = new_timestamps
 		_request_count[client_id] = 0
-	
+
 	var timestamps: Array[int] = _request_timestamps[client_id]
-	
+
 	# 移除60秒前的记录
 	while not timestamps.is_empty() and current_time - timestamps[0] > 60:
 		timestamps.pop_front()
 		_request_count[client_id] -= 1
-	
+
 	# 检查是否超过限制
 	if _request_count[client_id] >= _rate_limit:
 		_log_warn("Rate limit exceeded for client: " + client_id)
 		return false
-	
+
 	# 添加新记录
 	timestamps.append(current_time)
 	_request_count[client_id] += 1
-	
+
 	return true
 
 # ============================================================================
@@ -815,14 +815,14 @@ func _check_rate_limit(client_id: String) -> bool:
 func get_cached_scene_structure(scene_path: String) -> Dictionary:
 	var cache_key: String = scene_path
 	var current_time: int = Time.get_unix_time_from_system()
-	
+
 	# 检查缓存是否有效（5分钟有效期）
 	if _scene_structure_cache.has(cache_key):
 		var cache_time: int = _cache_timestamp.get(cache_key, 0)
 		if current_time - cache_time < 300:  # 5分钟
 			_log_debug("Cache hit: " + scene_path)
 			return _scene_structure_cache[cache_key]
-	
+
 	# 缓存未命中或已过期
 	_log_debug("Cache miss: " + scene_path)
 	return {}
@@ -830,10 +830,10 @@ func get_cached_scene_structure(scene_path: String) -> Dictionary:
 func set_cached_scene_structure(scene_path: String, structure: Dictionary) -> void:
 	var cache_key: String = scene_path
 	var current_time: int = Time.get_unix_time_from_system()
-	
+
 	_scene_structure_cache[cache_key] = structure
 	_cache_timestamp[cache_key] = current_time
-	
+
 	_log_debug("Cache set: " + scene_path)
 
 func clear_cache() -> void:
@@ -951,7 +951,7 @@ func _append_tool_log(tool_name: String, result: Variant, error: String) -> void
 		if preview.length() > 200:
 			preview = preview.substr(0, 200)
 		log_entry["result_preview"] = preview
-	
+
 	var existing: Array = []
 	if FileAccess.file_exists(_tool_log_path):
 		var file: FileAccess = FileAccess.open(_tool_log_path, FileAccess.READ)
@@ -960,9 +960,9 @@ func _append_tool_log(tool_name: String, result: Variant, error: String) -> void
 			if json.parse(file.get_as_text()) == OK:
 				existing = json.get_data()
 			file.close()
-	
+
 	existing.append(log_entry)
-	
+
 	var file: FileAccess = FileAccess.open(_tool_log_path, FileAccess.WRITE)
 	if file:
 		file.store_string(JSON.stringify(existing, "\t"))

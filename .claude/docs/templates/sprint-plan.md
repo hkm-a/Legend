@@ -63,4 +63,3 @@
 - [ ] No S1 or S2 bugs in delivered features
 - [ ] Design documents updated for any deviations
 - [ ] Code reviewed and merged
-

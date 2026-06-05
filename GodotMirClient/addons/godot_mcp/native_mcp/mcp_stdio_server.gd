@@ -40,37 +40,37 @@ func set_log_callback(callback: Callable) -> void:
 ## @returns: bool - 启动成功返回 true，失败返回 false
 func start() -> bool:
 	_active = true
-	
+
 	# 确保 stdout 及时刷新
 	ProjectSettings.set_setting("application/run/flush_stdout_on_print", true)
-	
+
 	_thread = Thread.new()
 	_thread.start(_stdin_listen_loop)
-	
+
 	server_started.emit()
 	if _log_callback.is_valid():
 		_log_callback.call("INFO", "Server started")
-	
+
 	return true
 
 ## 停止 stdio 传输层
 func stop() -> void:
 	if not _active:
 		return
-	
+
 	_active = false
-	
+
 	# 等待线程结束
 	if _thread and _thread.is_alive():
 		_thread.wait_to_finish()
 		_thread = null
-	
+
 	# 清空队列
 	_mutex.lock()
 	_message_queue.clear()
 	_response_queue.clear()
 	_mutex.unlock()
-	
+
 	server_stopped.emit()
 	if _log_callback.is_valid():
 		_log_callback.call("INFO", "Server stopped")
@@ -89,18 +89,18 @@ func is_running() -> bool:
 func _stdin_listen_loop() -> void:
 	if _log_callback.is_valid():
 		_log_callback.call("DEBUG", "Listen loop started")
-	
+
 	while _active:
 		# 从 stdin 读取数据
 		var input: String = OS.read_string_from_stdin()
-		
+
 		if not input.is_empty():
 			# 解析消息
 			_parse_and_queue_message(input)
-		
+
 		# 避免 CPU 占用过高
 		OS.delay_msec(10)
-	
+
 	if _log_callback.is_valid():
 		_log_callback.call("DEBUG", "Listen loop stopped")
 
@@ -108,60 +108,60 @@ func _stdin_listen_loop() -> void:
 ## @param raw_input: String - 从 stdin 读取的原始字符串
 func _parse_and_queue_message(raw_input: String) -> void:
 	var lines: PackedStringArray = raw_input.split("\n")
-	
+
 	for line in lines:
 		if line.is_empty():
 			continue
-		
+
 		var json: JSON = JSON.new()
 		var parse_result: Error = json.parse(line)
-		
+
 		if parse_result != OK:
 			if _log_callback.is_valid():
 				_log_callback.call("ERROR", "JSON parse error: " + json.get_error_message())
 			call_deferred("_emit_error", null, MCPTypes.ERROR_PARSE_ERROR, "Failed to parse JSON input", line)
 			continue
-		
+
 		var message: Dictionary = json.get_data()
-		
+
 		# 线程安全：使用互斥锁保护消息队列
 		_mutex.lock()
 		_message_queue.append(message)
 		_mutex.unlock()
-		
+
 		# 在主线程中处理消息（确保线程安全）
 		call_deferred("_process_next_message")
-	
+
 	# 处理响应队列
 	call_deferred("_process_response_queue")
 
 ## 处理下一个消息
 func _process_next_message() -> void:
 	_mutex.lock()
-	
+
 	if _message_queue.is_empty():
 		_mutex.unlock()
 		return
-	
+
 	var message: Dictionary = _message_queue.pop_front()
-	
+
 	_mutex.unlock()
-	
+
 	# 发送信号到核心层处理
 	message_received.emit(message, null)  # context 为 null（stdio 不需要）
 
 ## 处理响应队列（stdio 模式：直接输出到 stdout）
 func _process_response_queue() -> void:
 	_mutex.lock()
-	
+
 	if _response_queue.is_empty():
 		_mutex.unlock()
 		return
-	
+
 	var response: Dictionary = _response_queue.pop_front()
-	
+
 	_mutex.unlock()
-	
+
 	# 发送到 stdout
 	_send_response(response)
 
@@ -169,10 +169,10 @@ func _process_response_queue() -> void:
 ## @param response: Dictionary - JSON-RPC 响应
 func _send_response(response: Dictionary) -> void:
 	var json_string: String = JSON.stringify(response)
-	
+
 	if _log_callback.is_valid():
 		_log_callback.call("DEBUG", "Sending response: " + json_string)
-	
+
 	# 输出到 stdout
 	print(json_string)
 
@@ -199,7 +199,7 @@ func queue_response(response: Dictionary) -> void:
 	_mutex.lock()
 	_response_queue.append(response)
 	_mutex.unlock()
-	
+
 	call_deferred("_process_response_queue")
 
 ## 在主线程中发送错误信号（线程安全）

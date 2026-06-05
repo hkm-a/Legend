@@ -54,17 +54,17 @@ func _get_user_scene_root() -> Node:
 	var editor_interface: EditorInterface = _get_editor_interface()
 	if not editor_interface:
 		return null
-	
+
 	var scene_root: Node = editor_interface.get_edited_scene_root()
 	if scene_root and not scene_root.name.begins_with("@") and scene_root.get_class() != "PanelContainer":
 		return scene_root
-	
+
 	var open_scene_roots: Array = editor_interface.get_open_scene_roots()
 	for root in open_scene_roots:
 		var node_root: Node = root
 		if node_root and not node_root.name.begins_with("@") and node_root.get_class() != "PanelContainer":
 			return node_root
-	
+
 	return scene_root
 
 static func _make_friendly_path(node: Node, scene_root: Node) -> String:
@@ -106,13 +106,13 @@ func register_tools(server_core: RefCounted) -> void:
 func _register_get_editor_state(server_core: RefCounted) -> void:
 	var tool_name: String = "get_editor_state"
 	var description: String = "Get the current state of the Godot editor, including active scene and selection info."
-	
+
 	# inputSchema
 	var input_schema: Dictionary = {
 		"type": "object",
 		"properties": {}
 	}
-	
+
 	# outputSchema
 	var output_schema: Dictionary = {
 		"type": "object",
@@ -126,7 +126,7 @@ func _register_get_editor_state(server_core: RefCounted) -> void:
 			"selected_count": {"type": "integer"}
 		}
 	}
-	
+
 	# annotations - readOnlyHint = true
 	var annotations: Dictionary = {
 		"readOnlyHint": true,
@@ -134,7 +134,7 @@ func _register_get_editor_state(server_core: RefCounted) -> void:
 		"idempotentHint": true,
 		"openWorldHint": false
 	}
-	
+
 	# 注册工具
 	server_core.register_tool(tool_name, description, input_schema,
 						  Callable(self, "_tool_get_editor_state"),
@@ -145,10 +145,10 @@ func _tool_get_editor_state(params: Dictionary) -> Dictionary:
 	var editor_interface: EditorInterface = _get_editor_interface()
 	if not editor_interface:
 		return {"error": "Editor interface not available"}
-	
+
 	var scene_root: Node = _get_user_scene_root()
 	var active_scene: String = scene_root.name if scene_root else ""
-	
+
 	var selected_nodes: Array = []
 	var selection: EditorSelection = editor_interface.get_selection()
 	if selection:
@@ -162,11 +162,11 @@ func _tool_get_editor_state(params: Dictionary) -> Dictionary:
 			if node_script and node_script is Script:
 				node_info["script_path"] = node_script.resource_path
 			selected_nodes.append(node_info)
-	
+
 	var editor_mode: String = "editor"
 	if editor_interface.is_playing_scene():
 		editor_mode = "playing"
-	
+
 	return {
 		"active_scene": active_scene,
 		"selected_nodes": selected_nodes,
@@ -181,7 +181,7 @@ func _tool_get_editor_state(params: Dictionary) -> Dictionary:
 func _register_run_project(server_core: RefCounted) -> void:
 	var tool_name: String = "run_project"
 	var description: String = "Run the current project or a specific scene. Launches the game in play mode."
-	
+
 	# inputSchema
 	var input_schema: Dictionary = {
 		"type": "object",
@@ -197,7 +197,7 @@ func _register_run_project(server_core: RefCounted) -> void:
 			}
 		}
 	}
-	
+
 	# outputSchema
 	var output_schema: Dictionary = {
 		"type": "object",
@@ -206,7 +206,7 @@ func _register_run_project(server_core: RefCounted) -> void:
 			"mode": {"type": "string"}
 		}
 	}
-	
+
 	# annotations
 	var annotations: Dictionary = {
 		"readOnlyHint": false,
@@ -214,7 +214,7 @@ func _register_run_project(server_core: RefCounted) -> void:
 		"idempotentHint": false,
 		"openWorldHint": false
 	}
-	
+
 	# 注册工具
 	server_core.register_tool(tool_name, description, input_schema,
 						  Callable(self, "_tool_run_project"),
@@ -229,12 +229,12 @@ func _tool_run_project(params: Dictionary) -> Dictionary:
 	var editor_interface: EditorInterface = _get_editor_interface()
 	if not editor_interface:
 		return {"error": "Editor interface not available"}
-	
+
 	if editor_interface.is_playing_scene():
 		return {"error": "Project is already running. Stop it first with stop_project."}
-	
+
 	var scene_path: String = params.get("scene_path", "")
-	
+
 	if not scene_path.is_empty():
 		if not FileAccess.file_exists(scene_path):
 			return {"error": "Scene file not found: " + scene_path}
@@ -245,7 +245,7 @@ func _tool_run_project(params: Dictionary) -> Dictionary:
 			editor_interface.play_current_scene()
 		else:
 			editor_interface.play_main_scene()
-	
+
 	return {
 		"status": "success",
 		"mode": "playing"
@@ -258,7 +258,7 @@ func _tool_run_project(params: Dictionary) -> Dictionary:
 func _register_stop_project(server_core: RefCounted) -> void:
 	var tool_name: String = "stop_project"
 	var description: String = "Stop the currently running project and return to editor mode."
-	
+
 	# inputSchema
 	var input_schema: Dictionary = {
 		"type": "object",
@@ -270,7 +270,7 @@ func _register_stop_project(server_core: RefCounted) -> void:
 			}
 		}
 	}
-	
+
 	# outputSchema
 	var output_schema: Dictionary = {
 		"type": "object",
@@ -279,7 +279,7 @@ func _register_stop_project(server_core: RefCounted) -> void:
 			"mode": {"type": "string"}
 		}
 	}
-	
+
 	# annotations
 	var annotations: Dictionary = {
 		"readOnlyHint": false,
@@ -287,7 +287,7 @@ func _register_stop_project(server_core: RefCounted) -> void:
 		"idempotentHint": true,
 		"openWorldHint": false
 	}
-	
+
 	# 注册工具
 	server_core.register_tool(tool_name, description, input_schema,
 						  Callable(self, "_tool_stop_project"),
@@ -302,12 +302,12 @@ func _tool_stop_project(params: Dictionary) -> Dictionary:
 	var editor_interface: EditorInterface = _get_editor_interface()
 	if not editor_interface:
 		return {"error": "Editor interface not available"}
-	
+
 	if not editor_interface.is_playing_scene():
 		return {"error": "Project is not currently running."}
-	
+
 	editor_interface.stop_playing_scene()
-	
+
 	return {
 		"status": "success",
 		"mode": "editor"
@@ -320,13 +320,13 @@ func _tool_stop_project(params: Dictionary) -> Dictionary:
 func _register_get_selected_nodes(server_core: RefCounted) -> void:
 	var tool_name: String = "get_selected_nodes"
 	var description: String = "Get the list of currently selected nodes in the editor."
-	
+
 	# inputSchema
 	var input_schema: Dictionary = {
 		"type": "object",
 		"properties": {}
 	}
-	
+
 	# outputSchema
 	var output_schema: Dictionary = {
 		"type": "object",
@@ -338,14 +338,14 @@ func _register_get_selected_nodes(server_core: RefCounted) -> void:
 			"count": {"type": "integer"}
 		}
 	}
-	
+
 	var annotations: Dictionary = {
 		"readOnlyHint": true,
 		"destructiveHint": false,
 		"idempotentHint": true,
 		"openWorldHint": false
 	}
-	
+
 	server_core.register_tool(tool_name, description, input_schema,
 						  Callable(self, "_tool_get_selected_nodes"),
 						  output_schema, annotations,
@@ -355,11 +355,11 @@ func _tool_get_selected_nodes(params: Dictionary) -> Dictionary:
 	var editor_interface: EditorInterface = _get_editor_interface()
 	if not editor_interface:
 		return {"error": "Editor interface not available"}
-	
+
 	var selected_nodes: Array = []
 	var selection: EditorSelection = editor_interface.get_selection()
 	var scene_root: Node = _get_user_scene_root()
-	
+
 	if selection:
 		var selected: Array[Node] = selection.get_selected_nodes()
 		for node in selected:
@@ -371,7 +371,7 @@ func _tool_get_selected_nodes(params: Dictionary) -> Dictionary:
 			if node_script and node_script is Script:
 				node_info["script_path"] = node_script.resource_path
 			selected_nodes.append(node_info)
-	
+
 	if selected_nodes.is_empty():
 		var edited_scene: Node = editor_interface.get_edited_scene_root()
 		if edited_scene:
@@ -379,7 +379,7 @@ func _tool_get_selected_nodes(params: Dictionary) -> Dictionary:
 				"path": _make_friendly_path(edited_scene, scene_root),
 				"type": edited_scene.get_class()
 			})
-	
+
 	return {
 		"selected_nodes": selected_nodes,
 		"count": selected_nodes.size()
@@ -1065,7 +1065,7 @@ func _sanitize_cli_output(text: String) -> String:
 func _register_set_editor_setting(server_core: RefCounted) -> void:
 	var tool_name: String = "set_editor_setting"
 	var description: String = "Set an editor setting value. Requires editor restart for some settings to take effect."
-	
+
 	# inputSchema
 	var input_schema: Dictionary = {
 		"type": "object",
@@ -1080,7 +1080,7 @@ func _register_set_editor_setting(server_core: RefCounted) -> void:
 		},
 		"required": ["setting_name", "setting_value"]
 	}
-	
+
 	# outputSchema
 	var output_schema: Dictionary = {
 		"type": "object",
@@ -1091,7 +1091,7 @@ func _register_set_editor_setting(server_core: RefCounted) -> void:
 			"new_value": {"type": "string"}
 		}
 	}
-	
+
 	# annotations
 	var annotations: Dictionary = {
 		"readOnlyHint": false,
@@ -1099,7 +1099,7 @@ func _register_set_editor_setting(server_core: RefCounted) -> void:
 		"idempotentHint": true,
 		"openWorldHint": false
 	}
-	
+
 	# 注册工具
 	server_core.register_tool(tool_name, description, input_schema,
 						  Callable(self, "_tool_set_editor_setting"),
@@ -1109,27 +1109,27 @@ func _register_set_editor_setting(server_core: RefCounted) -> void:
 func _tool_set_editor_setting(params: Dictionary) -> Dictionary:
 	var setting_name: String = params.get("setting_name", "")
 	var setting_value: Variant = params.get("setting_value", null)
-	
+
 	if setting_name.is_empty():
 		return {"error": "Missing required parameter: setting_name"}
 	if setting_value == null:
 		return {"error": "Missing required parameter: setting_value"}
-	
+
 	var editor_interface: EditorInterface = _get_editor_interface()
 	if not editor_interface:
 		return {"error": "Editor interface not available"}
-	
+
 	var editor_settings: EditorSettings = editor_interface.get_editor_settings()
 	if not editor_settings:
 		return {"error": "Failed to get EditorSettings"}
-	
+
 	var old_value: Variant = null
 	if editor_settings.has_setting(setting_name):
 		old_value = editor_settings.get_setting(setting_name)
 	editor_settings.set_setting(setting_name, setting_value)
 	if editor_settings.has_method("save"):
 		editor_settings.save()
-	
+
 	return {
 		"status": "success",
 		"setting_name": setting_name,

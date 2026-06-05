@@ -52,7 +52,7 @@ Note: in `solo` mode, director spawns (CD-PHASE-GATE, TD-PHASE-GATE, PR-PHASE-GA
   - Options:
     - `[A] Yes — run this gate`
     - `[B] No — pick a different gate` (if selected, show a second widget listing all gate options: Concept → Systems Design, Systems Design → Technical Setup, Technical Setup → Pre-Production, Pre-Production → Production, Production → Polish, Polish → Release)
-  
+
   Do not skip this confirmation step when no argument is provided.
 
 ---

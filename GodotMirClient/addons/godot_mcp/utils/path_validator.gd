@@ -54,24 +54,24 @@ static func validate_path(path: String, strict: bool = true) -> Dictionary:
 		"error": "",
 		"sanitized": ""
 	}
-	
+
 	if path.is_empty():
 		result["error"] = "Path is empty"
 		return result
-	
+
 	var sanitized: String = _sanitize_path(path)
 	result["sanitized"] = sanitized
-	
+
 	var is_allowed: bool = false
 	for allowed in ALLOWED_PATHS:
 		if sanitized.begins_with(allowed):
 			is_allowed = true
 			break
-	
+
 	if not is_allowed:
 		result["error"] = "Path must start with res:// or user://"
 		return result
-	
+
 	if strict:
 		for pattern in DANGEROUS_PATTERNS:
 			if sanitized.contains(pattern):
@@ -85,7 +85,7 @@ static func validate_path(path: String, strict: bool = true) -> Dictionary:
 		if path_part.contains(".."):
 			result["error"] = "Path contains directory traversal: .."
 			return result
-	
+
 	result["valid"] = true
 	result["sanitized"] = sanitized
 	return result
@@ -96,21 +96,21 @@ static func validate_file_path(path: String, allowed_extensions: Array = []) -> 
 	var result: Dictionary = validate_path(path)
 	if not result["valid"]:
 		return result
-	
+
 	if not allowed_extensions.is_empty():
 		var has_valid_ext: bool = false
 		var path_lower: String = result["sanitized"].to_lower()
-		
+
 		for ext in allowed_extensions:
 			if path_lower.ends_with(ext.to_lower()):
 				has_valid_ext = true
 				break
-		
+
 		if not has_valid_ext:
 			result["valid"] = false
 			result["error"] = "File extension not allowed. Allowed: " + str(allowed_extensions)
 			return result
-	
+
 	return result
 
 ## 验证目录路径
@@ -119,18 +119,18 @@ static func validate_directory_path(path: String) -> Dictionary:
 	var result: Dictionary = validate_path(path)
 	if not result["valid"]:
 		return result
-	
+
 	var sanitized: String = result["sanitized"]
 	var path_without_prefix: String = sanitized
 	for allowed in ALLOWED_PATHS:
 		if path_without_prefix.begins_with(allowed):
 			path_without_prefix = path_without_prefix.substr(allowed.length())
 			break
-	
+
 	if not path_without_prefix.is_empty() and not path_without_prefix.ends_with("/"):
 		sanitized += "/"
 		result["sanitized"] = sanitized
-	
+
 	return result
 
 # ===========================================
@@ -140,28 +140,28 @@ static func validate_directory_path(path: String) -> Dictionary:
 ## 清理路径（移除危险字符）
 static func _sanitize_path(path: String) -> String:
 	var sanitized: String = path
-	
+
 	var prefix: String = ""
 	for allowed in ALLOWED_PATHS:
 		if sanitized.begins_with(allowed):
 			prefix = allowed
 			sanitized = sanitized.substr(allowed.length())
 			break
-	
+
 	sanitized = sanitized.replace("..", "")
-	
+
 	while sanitized.contains("//"):
 		sanitized = sanitized.replace("//", "/")
-	
+
 	if sanitized.begins_with("/"):
 		sanitized = sanitized.lstrip("/")
-	
+
 	if prefix.is_empty():
 		if path.begins_with("/"):
 			prefix = "res://"
 		else:
 			prefix = "res://"
-	
+
 	return prefix + sanitized
 
 # ===========================================
@@ -175,7 +175,7 @@ static func validate_paths(paths: Array[String], strict: bool = true) -> Diction
 		"valid": [],
 		"invalid": []
 	}
-	
+
 	for path in paths:
 		var validation: Dictionary = validate_path(path, strict)
 		if validation["valid"]:
@@ -185,7 +185,7 @@ static func validate_paths(paths: Array[String], strict: bool = true) -> Diction
 				"path": path,
 				"error": validation["error"]
 			})
-	
+
 	return result
 
 # ===========================================
@@ -196,7 +196,7 @@ static func validate_paths(paths: Array[String], strict: bool = true) -> Diction
 ## 返回: bool
 func validate_path_with_signal(path: String) -> bool:
 	var result: Dictionary = validate_path(path, _strict_mode)
-	
+
 	if result["valid"]:
 		path_approved.emit(result["sanitized"])
 		return true
@@ -232,7 +232,7 @@ func clear_allowed_extensions() -> void:
 static func test_validation() -> Array[String]:
 	var output: Array[String] = []
 	output.append("Testing path validation...")
-	
+
 	var test_paths: Array[String] = [
 		"res://test.tscn",
 		"user://save.dat",
@@ -241,7 +241,7 @@ static func test_validation() -> Array[String]:
 		"res://../escape.tscn",
 		"res://normal/path/script.gd"
 	]
-	
+
 	for path in test_paths:
 		var result: Dictionary = validate_path(path)
 		output.append("  Path: " + path)
@@ -251,5 +251,5 @@ static func test_validation() -> Array[String]:
 		else:
 			output.append("    Sanitized: " + result["sanitized"])
 		output.append("")
-	
+
 	return output

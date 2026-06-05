@@ -24,33 +24,800 @@
 #
 # STATUS VALUES: active | deprecated | superseded-by: TR-[system]-NNN
 
-version: 1
-last_updated: ""
+version: 3
+last_updated: "2026-06-05"
 
-requirements: []
+requirements:
 
-# --- EXAMPLE ENTRIES (remove when first real entries are added) ---
-#
-# - id: TR-combat-001
-#   system: combat
-#   gdd: design/gdd/combat-system.md
-#   requirement: "Player takes damage from enemies based on attack power minus defence"
-#   created: 2026-03-10
-#   revised: ""
-#   status: active
-#
-# - id: TR-combat-002
-#   system: combat
-#   gdd: design/gdd/combat-system.md
-#   requirement: "Combo window timing is 0.4 seconds between hits"
-#   created: 2026-03-10
-#   revised: "2026-04-01"
-#   status: active
-#
-# - id: TR-combat-003
-#   system: combat
-#   gdd: design/gdd/combat-system.md
-#   requirement: "Old damage formula using raw stats"
-#   created: 2026-03-10
-#   revised: ""
-#   status: superseded-by: TR-combat-001
+  - id: TR-concept-001
+    system: concept
+    gdd: design/gdd/game-concept.md
+    requirement: "Phase 1 必须验证 30 秒离线 loot loop：移动、攻击、掉落、拾取、背包、装备、属性/战力变化反馈。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-concept-002
+    system: concept
+    gdd: design/gdd/game-concept.md
+    requirement: "Godot 4.6.3 PC 原生客户端；2D/2.5D，需版本文档核对 API。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-concept-003
+    system: concept
+    gdd: design/gdd/game-concept.md
+    requirement: "OpenMir2 行为/协议对齐必须 source-first；MinimalMirClient 不可作为权威。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-concept-004
+    system: concept
+    gdd: design/gdd/game-concept.md
+    requirement: "传奇地图、资源、坐标、遮挡、Y-sort 需要早期 spike/架构验证。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-concept-005
+    system: concept
+    gdd: design/gdd/game-concept.md
+    requirement: "Phase 1 不依赖完整联网；Godot PC Socket / 最小协议仅 spike 或未来扩展。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-concept-006
+    system: concept
+    gdd: design/gdd/game-concept.md
+    requirement: "掉落反馈与装备变强链路需要可见、可听、可快速判断价值。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-concept-007
+    system: concept
+    gdd: design/gdd/game-concept.md
+    requirement: "背包、装备对比、穿戴、属性变化提示必须控制范围，避免 UI/数据结构膨胀。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-systems-index-001
+    system: systems-index
+    gdd: design/gdd/systems-index.md
+    requirement: "所有系统需遵守 Foundation → Core → Presentation 分层依赖，避免 God Object。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-systems-index-002
+    system: systems-index
+    gdd: design/gdd/systems-index.md
+    requirement: "UI 只读取或调用 gameplay 接口，不拥有 gameplay 数据。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-systems-index-003
+    system: systems-index
+    gdd: design/gdd/systems-index.md
+    requirement: "Phase 1 网络/协议保持 Spike/Future，不进入主线依赖。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-systems-index-004
+    system: systems-index
+    gdd: design/gdd/systems-index.md
+    requirement: "MVP 优先系统为 OpenMir2 映射、地图空间、角色属性、物品定义、掉落表、移动、战斗、拾取、背包、装备、HUD/反馈、存档。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-systems-index-005
+    system: systems-index
+    gdd: design/gdd/systems-index.md
+    requirement: "掉落与拾取必须拆分事件链：死亡、掉落生成、地面物、拾取请求、背包接收。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-systems-index-006
+    system: systems-index
+    gdd: design/gdd/systems-index.md
+    requirement: "装备系统通过 StatModifier 数据影响属性；属性系统拥有聚合结果，战力为只读显示。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-systems-index-007
+    system: systems-index
+    gdd: design/gdd/systems-index.md
+    requirement: "地图坐标/阻挡/Y-sort 必须分离逻辑坐标、阻挡查询、视觉排序责任。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-systems-index-008
+    system: systems-index
+    gdd: design/gdd/systems-index.md
+    requirement: "资源/地图转换管线需作为独立 Spike，Phase 1 可用临时素材。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-openmir2-spike-001
+    system: openmir2-spike
+    gdd: design/gdd/openmir2-behavior-mapping-spike.md
+    requirement: "Spike 必须覆盖地图坐标、阻挡、移动、攻击、伤害/死亡、刷怪、掉落、地面物、拾取、背包、装备、最小协议入口。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-openmir2-spike-002
+    system: openmir2-spike
+    gdd: design/gdd/openmir2-behavior-mapping-spike.md
+    requirement: "OpenMir2 原源码为 Tier 1 权威；MirServer 配置、mir2x、MinimalMirClient 不能单独决定行为。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-openmir2-spike-003
+    system: openmir2-spike
+    gdd: design/gdd/openmir2-behavior-mapping-spike.md
+    requirement: "Phase 1 Required 行为至少 E3 才能作为 downstream contract；E2 以下不得作为规则依据。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-openmir2-spike-004
+    system: openmir2-spike
+    gdd: design/gdd/openmir2-behavior-mapping-spike.md
+    requirement: "每条 mapping item 必须结构化记录 source、symbols、证据等级、触发、前置条件、状态变化、失败条件、决策、信心、downstream contract。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-openmir2-spike-005
+    system: openmir2-spike
+    gdd: design/gdd/openmir2-behavior-mapping-spike.md
+    requirement: "Adopt/Simplify/Exclude/Defer 必须明确，且 Adopt/Simplify 需输出 provisional contract。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-openmir2-spike-006
+    system: openmir2-spike
+    gdd: design/gdd/openmir2-behavior-mapping-spike.md
+    requirement: "未达 E3/E4 不得发明攻击距离、移动速度、掉率、背包格数、装备数值等具体玩法值。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-openmir2-spike-007
+    system: openmir2-spike
+    gdd: design/gdd/openmir2-behavior-mapping-spike.md
+    requirement: "至少产出 Map Coordinate、Blocking、Movement、Attack、Damage、Death、Spawn、Drop、Ground Item、Pickup、Inventory、Equipment、Protocol contracts。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-openmir2-spike-008
+    system: openmir2-spike
+    gdd: design/gdd/openmir2-behavior-mapping-spike.md
+    requirement: "下游 GDD 若偏离 E3/E4 contract，必须标记 intentional divergence 并说明影响和验证方式。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-map-space-001
+    system: map-space
+    gdd: design/gdd/map-coordinate-blocking-y-sort-system.md
+    requirement: "逻辑网格是 gameplay 权威；移动、阻挡、占位、刷怪、掉落、拾取、战斗距离输入必须基于 logical grid。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-map-space-002
+    system: map-space
+    gdd: design/gdd/map-coordinate-blocking-y-sort-system.md
+    requirement: "必须分离 Logical Grid、World/Render、Screen/Input 三个坐标空间。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-map-space-003
+    system: map-space
+    gdd: design/gdd/map-coordinate-blocking-y-sort-system.md
+    requirement: "OpenMir2-derived 与 MVP provisional 规则必须标记；source-authentic 行为需 E3/E4。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-map-space-004
+    system: map-space
+    gdd: design/gdd/map-coordinate-blocking-y-sort-system.md
+    requirement: "支持 MVP provisional playable contract：合成地图、单格 actor blocker、目标 reservation、掉落物不阻挡、同格物品容量 1、Y-sort tie-break。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-map-space-005
+    system: map-space
+    gdd: design/gdd/map-coordinate-blocking-y-sort-system.md
+    requirement: "Map Coordinate Contract 必须包含 map_id、bounds、cell→render anchor、input→cell、失败语义。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-map-space-006
+    system: map-space
+    gdd: design/gdd/map-coordinate-blocking-y-sort-system.md
+    requirement: "越界和未加载数据必须 fail-closed，区分 out_of_bounds 与 unknown_or_unloaded。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-map-space-007
+    system: map-space
+    gdd: design/gdd/map-coordinate-blocking-y-sort-system.md
+    requirement: "Map Blocking Contract 必须分离 static blocking、dynamic blocking、item occupancy、visual-only obstruction。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-map-space-008
+    system: map-space
+    gdd: design/gdd/map-coordinate-blocking-y-sort-system.md
+    requirement: "空间查询必须返回 typed/structured result：status、primary_reason、secondary_reasons、query_context、cell_facts、retry_hint。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-map-space-009
+    system: map-space
+    gdd: design/gdd/map-coordinate-blocking-y-sort-system.md
+    requirement: "每张 playable map 必须有 QA/authoring metadata，可验证 player start、spawn、item-placeable、drop-readable、visual obstruction、Y-sort anchor。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-map-space-010
+    system: map-space
+    gdd: design/gdd/map-coordinate-blocking-y-sort-system.md
+    requirement: "Player 与普通怪在 MVP 中是单格 blocking actors。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-map-space-011
+    system: map-space
+    gdd: design/gdd/map-coordinate-blocking-y-sort-system.md
+    requirement: "movement reservation 由地图空间权威拥有，source 保持 occupied，target reserved，commit/cancel 原子更新。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-map-space-012
+    system: map-space
+    gdd: design/gdd/map-coordinate-blocking-y-sort-system.md
+    requirement: "occupancy/reservation/item mutations 必须经过 deterministic authoritative update ordering。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-map-space-013
+    system: map-space
+    gdd: design/gdd/map-coordinate-blocking-y-sort-system.md
+    requirement: "掉落物占 logical cell、参与 pickup/Y-sort，但 MVP 中不阻挡 actor；pickup-complete 阶段同格容量为 1。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-map-space-014
+    system: map-space
+    gdd: design/gdd/map-coordinate-blocking-y-sort-system.md
+    requirement: "掉落物必须保持 readability floor；空间放置失败不能删除、重 roll 或静默移动奖励。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-map-space-015
+    system: map-space
+    gdd: design/gdd/map-coordinate-blocking-y-sort-system.md
+    requirement: "gameplay query 不得使用瞬时 sprite pixel position；必须使用 logical cell 和 anchor。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-map-space-016
+    system: map-space
+    gdd: design/gdd/map-coordinate-blocking-y-sort-system.md
+    requirement: "diagonal、corner-cutting、distance metric、pickup/attack range 等保持 evidence-gated。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-map-space-017
+    system: map-space
+    gdd: design/gdd/map-coordinate-blocking-y-sort-system.md
+    requirement: "spawn/drop/pickup 需要通过 map-space 查询合法性，但具体 spawn/drop/pickup 规则归下游系统。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-map-space-018
+    system: map-space
+    gdd: design/gdd/map-coordinate-blocking-y-sort-system.md
+    requirement: "Y-sort 使用 stable anchor、type rank、stable instance ID；视觉排序不得影响 gameplay。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-map-space-019
+    system: map-space
+    gdd: design/gdd/map-coordinate-blocking-y-sort-system.md
+    requirement: "逻辑地图数据是 gameplay 权威；visual tiles、sprites、physics helpers 不得覆盖逻辑状态。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-map-space-020
+    system: map-space
+    gdd: design/gdd/map-coordinate-blocking-y-sort-system.md
+    requirement: "查询/排序/日志/debug overlay 必须有性能 guardrails；正常 gameplay 不全图每帧扫描。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-map-space-021
+    system: map-space
+    gdd: design/gdd/map-coordinate-blocking-y-sort-system.md
+    requirement: "实现前需要 ADR 覆盖 map representation、query schema、input projection、deterministic Y-sort、occupancy ordering。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-attributes-001
+    system: attributes
+    gdd: design/gdd/character-attributes-system.md
+    requirement: "属性系统拥有属性输入语义、registry、计算、校验、只读 snapshot、版本、delta、invalid/stale/debug 语义。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-attributes-002
+    system: attributes
+    gdd: design/gdd/character-attributes-system.md
+    requirement: "装备、HUD、combat、AI、save/load、scene node 不得直接写最终属性、base stats、derived stats 或 snapshot 内部字段。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-attributes-003
+    system: attributes
+    gdd: design/gdd/character-attributes-system.md
+    requirement: "Phase 1 stat registry 必须区分 required、active、visible、debug-only、reserved、modifier-targetable、actor-type-specific 字段。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-attributes-004
+    system: attributes
+    gdd: design/gdd/character-attributes-system.md
+    requirement: "Growth handoff 必须提供 reason、salience、primary comparison stat、combat_power before/after/delta、visible/hidden deltas、invalid/stale status。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-attributes-005
+    system: attributes
+    gdd: design/gdd/character-attributes-system.md
+    requirement: "装备 preview 必须选择 pure preview、equipment-owned preview 或 no preview；preview 不得 mutate authoritative state 或增加 snapshot_version。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-attributes-006
+    system: attributes
+    gdd: design/gdd/character-attributes-system.md
+    requirement: "属性层必须分离 identity、base_stats、current_resources、derived_stats、stat_modifiers、snapshot、debug_trace。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-attributes-007
+    system: attributes
+    gdd: design/gdd/character-attributes-system.md
+    requirement: "Structural rebuild 与 resource mutation 是两条路径；resource-only HP/MP 变化不得重聚合 modifiers。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-attributes-008
+    system: attributes
+    gdd: design/gdd/character-attributes-system.md
+    requirement: "Equipment replacement、level-up、load rebuild、spawn init 必须 transaction-like，不能暴露 intermediate state。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-attributes-009
+    system: attributes
+    gdd: design/gdd/character-attributes-system.md
+    requirement: "Validation pipeline 分 Stage A-D，invalid config/source/calculation/output 必须 structured failure。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-attributes-010
+    system: attributes
+    gdd: design/gdd/character-attributes-system.md
+    requirement: "Invalid modifier policy 必须拒绝 unsupported op、unknown stat、duplicate source key、source-authentic without evidence 等。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-attributes-011
+    system: attributes
+    gdd: design/gdd/character-attributes-system.md
+    requirement: "AttributeSnapshot 必须 immutable/read-only；不能向消费者暴露可变 Dictionary/Array 权威状态。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-attributes-012
+    system: attributes
+    gdd: design/gdd/character-attributes-system.md
+    requirement: "Events 是 data-first domain events；核心逻辑需 scene-tree independent，不依赖 Autoload。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-attributes-013
+    system: attributes
+    gdd: design/gdd/character-attributes-system.md
+    requirement: "UI/presentation 只能消费 metadata/deltas/status，不拥有布局/VFX/audio，也不得展示 invalid/stale 为正常成长。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-attributes-014
+    system: attributes
+    gdd: design/gdd/character-attributes-system.md
+    requirement: "Save/Load 持久化 authoritative inputs，不以 derived snapshot 为 truth。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-attributes-015
+    system: attributes
+    gdd: design/gdd/character-attributes-system.md
+    requirement: "实现前必须有 9 个 ADR/技术设计：data representation、snapshot API、event contract、transaction、persistence、fixture config、GUT strategy、Resource policy、combat power ownership。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-attributes-016
+    system: attributes
+    gdd: design/gdd/character-attributes-system.md
+    requirement: "Structural rebuild 不得 per-frame；aggregation O(M+S)；hot path 使用 compact stat IDs。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-attributes-017
+    system: attributes
+    gdd: design/gdd/character-attributes-system.md
+    requirement: "必须公式化并测试 effective_stat、effective_stat_pair、current_resource_after、snapshot_valid、attribute_delta、snapshot_delta、combat_power。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-attributes-018
+    system: attributes
+    gdd: design/gdd/character-attributes-system.md
+    requirement: "阻塞测试证据在 tests/unit/character_attributes/，覆盖 AC-01 至 AC-17 的逻辑/fixture 部分。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-item-definition-001
+    system: item-definition
+    gdd: design/gdd/item-definition-system.md
+    requirement: "物品定义系统拥有稳定 item_id、template 合同、type/quality/display/stack/equipment/modifier/source/evidence/lifecycle。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-item-definition-002
+    system: item-definition
+    gdd: design/gdd/item-definition-system.md
+    requirement: "掉落、背包、装备、UI、存档不得各自复制物品定义字段作为事实来源。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-item-definition-003
+    system: item-definition
+    gdd: design/gdd/item-definition-system.md
+    requirement: "每个可引用物品模板必须有稳定唯一 item_id；不得因显示/数值调整改变。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-item-definition-004
+    system: item-definition
+    gdd: design/gdd/item-definition-system.md
+    requirement: "必须区分 template、instance、inventory stack、equipped reference；instance 不得重定义 template truth。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-item-definition-005
+    system: item-definition
+    gdd: design/gdd/item-definition-system.md
+    requirement: "Phase 1 item types 至少支持 equipment、material；currency optional；debug/reserved 不得进入正常 loot。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-item-definition-006
+    system: item-definition
+    gdd: design/gdd/item-definition-system.md
+    requirement: "quality 是分类/展示/显著性元数据，不是 power、drop rate、price 或 combat power authority。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-item-definition-007
+    system: item-definition
+    gdd: design/gdd/item-definition-system.md
+    requirement: "player-facing item 必须有 display metadata 和 Phase 1 player-facing minimum metadata。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-item-definition-008
+    system: item-definition
+    gdd: design/gdd/item-definition-system.md
+    requirement: "stack_policy/max_stack_size 必须明确；equipment Phase 1 non-stackable。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-item-definition-009
+    system: item-definition
+    gdd: design/gdd/item-definition-system.md
+    requirement: "equipment item 必须有 equipment data block，但 Item Definition 不决定 equip legality。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-item-definition-010
+    system: item-definition
+    gdd: design/gdd/item-definition-system.md
+    requirement: "Phase 1 modifier payload 仅允许 add_flat，目标必须是 Character Attributes modifier-targetable stat，禁止 current resources。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-item-definition-011
+    system: item-definition
+    gdd: design/gdd/item-definition-system.md
+    requirement: "source/evidence labels 必填；openmir2_verified 必须有 E3/E4 evidence ref。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-item-definition-012
+    system: item-definition
+    gdd: design/gdd/item-definition-system.md
+    requirement: "definition validation 必须覆盖 identity、display、stack、type、equipment、evidence，失败时不得 spawnable。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-item-definition-013
+    system: item-definition
+    gdd: design/gdd/item-definition-system.md
+    requirement: "runtime truth 必须 normalized DTO/table，.tres 只可作为 authoring envelope。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-item-definition-014
+    system: item-definition
+    gdd: design/gdd/item-definition-system.md
+    requirement: "下游必须通过 status-bearing query/projection results 消费定义，不得读 raw authoring rows。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-item-definition-015
+    system: item-definition
+    gdd: design/gdd/item-definition-system.md
+    requirement: "deprecated definitions 不可删除或静默 remap；save/debug/migration 需显式策略。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-item-definition-016
+    system: item-definition
+    gdd: design/gdd/item-definition-system.md
+    requirement: "MVP provisional item set 至少含 baseline、upgrade、sidegrade/weaker、stackable material，可选 rare showcase。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-item-definition-017
+    system: item-definition
+    gdd: design/gdd/item-definition-system.md
+    requirement: "Drop Table、Drop/Pickup、Inventory、Equipment、Attributes、UI、Save/Load 的边界必须遵守 Item Definition source-of-truth。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-item-definition-018
+    system: item-definition
+    gdd: design/gdd/item-definition-system.md
+    requirement: "公式/验证必须覆盖 stack_quantity_valid、modifier_payload_row_valid、modifier_payload_valid、lookup、semantic validity、profile eligibility、spawn eligibility。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-item-definition-019
+    system: item-definition
+    gdd: design/gdd/item-definition-system.md
+    requirement: "正常 gameplay/UI lookup 不得全扫 authoring rows 或每次重跑全验证；需 validated indexed runtime data。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-item-definition-020
+    system: item-definition
+    gdd: design/gdd/item-definition-system.md
+    requirement: "实现前需要 Item Definition ADR 覆盖 data representation、validation result schema、version/migration boundary、authoring pipeline。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-item-definition-021
+    system: item-definition
+    gdd: design/gdd/item-definition-system.md
+    requirement: "Item UI projection 必须提供 fallback/status keys，且 accessibility metadata 不得只依赖颜色/icon。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-drop-table-001
+    system: drop-table
+    gdd: design/gdd/drop-table-system.md
+    requirement: "Drop Table 必须拥有 reward source → drop table mapping、roll groups、weights、no-drop policy、quantity policy、validation、deterministic roll results 和 QA replay provenance。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-drop-table-002
+    system: drop-table
+    gdd: design/gdd/drop-table-system.md
+    requirement: "Drop Table 不得拥有 item template truth、ground drop lifecycle、map placement、pickup、inventory receive、equipment legality、UI/VFX/audio 或 final item instance identity。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-drop-table-003
+    system: drop-table
+    gdd: design/gdd/drop-table-system.md
+    requirement: "Every item row 必须通过 Item Definition spawn_eligible_reference 与 stack/equipment quantity constraints 验证。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-drop-table-004
+    system: drop-table
+    gdd: design/gdd/drop-table-system.md
+    requirement: "Drop Table 必须使用 deterministic weighted selection、inclusive RNG convention、deterministic quantity roll、exact boundary behavior 和 expected acquisition formulas。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-drop-table-005
+    system: drop-table
+    gdd: design/gdd/drop-table-system.md
+    requirement: "Drop Table 必须把非证据支持的 rates/items 标记为 mvp_provisional，并阻止缺少 ADR-0016 accepted readiness 的 openmir2_verified claims。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-drop-table-006
+    system: drop-table
+    gdd: design/gdd/drop-table-system.md
+    requirement: "Phase 1 QA 必须使用 fake RNG、exact boundary tests、deterministic fixtures 和真实 Godot GDScript test runner；guard-only runner 不可作为 passing evidence。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+
+  - id: TR-click-movement-001
+    system: click-movement
+    gdd: design/gdd/click-movement-system.md
+    requirement: "点击移动必须使用 named input action，并在同一输入事件上通过 UI/input gate 后才允许世界投影；UI-consumed 或 unknown ownership 必须 fail closed。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-click-movement-002
+    system: click-movement
+    gdd: design/gdd/click-movement-system.md
+    requirement: "所有点击坐标必须通过 MapProjection 转换为 logical Vector2i candidate；点击移动不得本地转换或 fallback 到最近格、上一格或 (0,0)。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-click-movement-003
+    system: click-movement
+    gdd: design/gdd/click-movement-system.md
+    requirement: "Phase 1 允许远端点击 destination，但实际执行必须拆为 orthogonal-only 单步；diagonal step、corner-cutting、cross-map movement 保持 unresolved/evidence-gated。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-click-movement-004
+    system: click-movement
+    gdd: design/gdd/click-movement-system.md
+    requirement: "每个 movement step 必须通过 MovementLegalityService read-only preflight，然后通过 MapSpaceState RESERVE_MOVEMENT / COMMIT_MOVEMENT / CANCEL_MOVEMENT mutation authority。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-click-movement-005
+    system: click-movement
+    gdd: design/gdd/click-movement-system.md
+    requirement: "无效、阻挡、no-path replacement click 不得取消当前有效 movement；MovingStep 中 valid replacement 作为 pending destination，当前 step commit 后从新 committed cell 重规划。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-click-movement-006
+    system: click-movement
+    gdd: design/gdd/click-movement-system.md
+    requirement: "Path query 必须返回 typed path-found/no-path/path-limit/unresolved result DTO，包含 ordered path cells、budget facts、canonical reasons 和 deterministic tie-break evidence。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-click-movement-007
+    system: click-movement
+    gdd: design/gdd/click-movement-system.md
+    requirement: "点击移动不得使用 Godot Navigation、Physics、TileMapLayer、Node2D position 或 Y-sort 作为 movement gameplay authority。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-click-movement-008
+    system: click-movement
+    gdd: design/gdd/click-movement-system.md
+    requirement: "Movement speed、path search budgets 和 MVP policy knobs 必须数据驱动；invalid speed/path budget config 必须 fail validation，不得硬编码或 silent clamp。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-click-movement-009
+    system: click-movement
+    gdd: design/gdd/click-movement-system.md
+    requirement: "移动反馈必须 typed、可区分 invalid/same-cell/blocked/reserved/no-path/command failure/unresolved；玩家反馈不得只依赖颜色或音频。"
+    created: 2026-06-05
+    revised: ""
+    status: active
+
+  - id: TR-click-movement-010
+    system: click-movement
+    gdd: design/gdd/click-movement-system.md
+    requirement: "点击移动 public logic 必须通过 testable dependencies/adapters 消费 projection、legality、map state、planner、tuning、actor/status facts；direct singleton-only core logic 不可作为 Done。"
+    created: 2026-06-05
+    revised: ""
+    status: active

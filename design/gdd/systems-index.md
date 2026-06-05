@@ -2,7 +2,7 @@
 
 > **Status**: Draft / Approved for GDD authoring
 > **Created**: 2026-06-03
-> **Last Updated**: 2026-06-03
+> **Last Updated**: 2026-06-05
 > **Source Concept**: design/gdd/game-concept.md
 
 > **TD-SYSTEM-BOUNDARY Note**: CONCERNS accepted — each system GDD must define `Owns / Reads / Writes / Emits / Listens`; avoid God Object boundaries; UI reads or invokes gameplay interfaces but never owns gameplay data; network/protocol remains Spike/Future only for Phase 1.
@@ -22,11 +22,11 @@
 | # | System Name | Category | Priority | Status | Design Doc | Depends On |
 |---|-------------|----------|----------|--------|------------|------------|
 | 1 | OpenMir2 行为映射 Spike | Spike / Foundation | MVP | Designed | design/gdd/openmir2-behavior-mapping-spike.md | — |
-| 2 | 地图坐标 / 阻挡 / Y-sort 系统 | Foundation | MVP | Not Started | — | OpenMir2 行为映射 Spike |
-| 3 | 角色属性系统 | Foundation | MVP | Not Started | — | OpenMir2 行为映射 Spike |
-| 4 | 物品定义系统 | Foundation | MVP | Not Started | — | OpenMir2 行为映射 Spike |
-| 5 | 掉落表系统 | Foundation / Economy | MVP | Not Started | — | 物品定义系统 |
-| 6 | 点击移动系统 | Core | MVP | Not Started | — | 地图坐标 / 阻挡 / Y-sort 系统 |
+| 2 | 地图坐标 / 阻挡 / Y-sort 系统 | Foundation | MVP | Needs Revision | design/gdd/map-coordinate-blocking-y-sort-system.md | OpenMir2 行为映射 Spike |
+| 3 | 角色属性系统 | Foundation | MVP | Needs Revision | design/gdd/character-attributes-system.md | OpenMir2 行为映射 Spike |
+| 4 | 物品定义系统 | Foundation | MVP | Approved | design/gdd/item-definition-system.md | OpenMir2 行为映射 Spike |
+| 5 | 掉落表系统 | Foundation / Economy | MVP | Approved | design/gdd/drop-table-system.md | 物品定义系统 |
+| 6 | 点击移动系统 | Core | MVP | Approved | design/gdd/click-movement-system.md | 地图坐标 / 阻挡 / Y-sort 系统 |
 | 7 | 交互目标 / 选择系统 (inferred) | Core | MVP | Not Started | — | 点击移动系统; 地图坐标 / 阻挡 / Y-sort 系统 |
 | 8 | 伤害计算系统 (inferred) | Core | MVP | Not Started | — | 角色属性系统 |
 | 9 | 生命 / 死亡 / 复活规则 (inferred) | Core | MVP | Not Started | — | 角色属性系统 |
@@ -211,10 +211,10 @@ No blocking circular dependencies found.
 | Metric | Count |
 |--------|-------|
 | Total systems identified | 34 |
-| Design docs started | 1 |
-| Design docs reviewed | 0 |
-| Design docs approved | 0 |
-| MVP systems designed | 1/20 |
+| Design docs started | 6 |
+| Design docs reviewed | 6 |
+| Design docs approved | 3 |
+| MVP systems designed | 6/20 |
 | Vertical Slice+ systems designed | 0/3 |
 
 ---

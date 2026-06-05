@@ -30,7 +30,7 @@
 #   Superseded entries:     Grep pattern="status: superseded"
 
 version: 1
-last_updated: ""
+last_updated: "2026-06-05"
 
 # ─── STATE OWNERSHIP ─────────────────────────────────────────────────────────
 # Who is the authoritative owner of each piece of shared game state.
@@ -43,7 +43,161 @@ last_updated: ""
 # interface: how other systems access this state (read-only property, method call,
 #   signal, shared resource, etc.) — this is the contract other ADRs depend on.
 
-state_ownership: []
+state_ownership:
+  - state: static_map_facts
+    status: active
+    owner_system: map-data-representation
+    adr: docs/architecture/adr-0001-map-data-representation.md
+    interface: "MapDefinition read-only query methods for static passability, item placement, visual obstruction tags, Y-sort anchor metadata, and validation tags"
+    write_access: authoring-tools-only
+    referenced_by:
+      - docs/architecture/adr-0001-map-data-representation.md
+    added: 2026-06-04
+    revised: ""
+
+  - state: runtime_map_space_state
+    status: active
+    owner_system: map-space-runtime
+    adr: docs/architecture/adr-0001-map-data-representation.md
+    interface: "MapSpaceState runtime service owns actor occupancy, item occupancy, and reservations while reading MapDefinition static facts"
+    write_access: map-space-runtime-only
+    referenced_by:
+      - docs/architecture/adr-0001-map-data-representation.md
+      - docs/architecture/adr-0003-authoritative-occupancy-reservation-update-ordering.md
+      - docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+      - docs/architecture/adr-0019-map-distance-and-movement-legality-contract.md
+      - docs/architecture/adr-0022-click-movement-runtime-intent-path-query-input-gate-command-result-contract.md
+    added: 2026-06-04
+    revised: "2026-06-05"
+
+  - state: attribute_runtime_state
+    status: active
+    owner_system: character-attributes-system
+    adr: docs/architecture/adr-0006-attribute-data-representation-and-stat-id-typing.md
+    interface: "Attribute runtime service owns normalized stat registry, base/effective/current runtime values, modifier aggregation state, and published snapshot versions; consumers access through ADR-approved query/snapshot APIs."
+    write_access: character-attributes-system-only
+    referenced_by:
+      - docs/architecture/adr-0006-attribute-data-representation-and-stat-id-typing.md
+    added: 2026-06-04
+    revised: ""
+
+  - state: item_definition_template_truth
+    status: active
+    owner_system: item-definition-system
+    adr: docs/architecture/adr-0015-item-definition-runtime-data-validation-query-and-versioning.md
+    interface: "ItemDefinitionRuntimeCatalog owns validated normalized item template rows, lifecycle/evidence labels, stack policy, display metadata keys, equipment candidate declarations, modifier payload declarations, and lookup indexes; consumers access them through status-bearing query/projection DTOs."
+    write_access: item-definition-system-only
+    referenced_by:
+      - docs/architecture/adr-0015-item-definition-runtime-data-validation-query-and-versioning.md
+      - docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+      - docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+      - docs/architecture/adr-0021-drop-table-runtime-data-validation-deterministic-roll-and-grant-candidate-handoff.md
+    added: 2026-06-04
+    revised: "2026-06-05"
+
+  - state: openmir2_behavior_evidence_registry
+    status: active
+    owner_system: openmir2-evidence-governance
+    adr: docs/architecture/adr-0016-openmir2-evidence-mapping-registry-and-provisional-contract-governance.md
+    interface: "Offline source-first evidence records, provisional contracts, divergence records, evidence levels, source tiers, decisions, and readiness gates; downstream systems cite Accepted evidence/contract IDs and versions."
+    write_access: source-documents-and-validation-tooling-only
+    referenced_by:
+      - docs/architecture/adr-0016-openmir2-evidence-mapping-registry-and-provisional-contract-governance.md
+      - docs/architecture/adr-0019-map-distance-and-movement-legality-contract.md
+      - docs/architecture/adr-0021-drop-table-runtime-data-validation-deterministic-roll-and-grant-candidate-handoff.md
+      - docs/architecture/adr-0022-click-movement-runtime-intent-path-query-input-gate-command-result-contract.md
+    added: 2026-06-05
+    revised: "2026-06-05"
+
+  - state: drop_table_runtime_catalog
+    status: active
+    owner_system: drop-table-system
+    adr: docs/architecture/adr-0021-drop-table-runtime-data-validation-deterministic-roll-and-grant-candidate-handoff.md
+    interface: "Validated drop tables, pools, weights, quantity policies, roll eligibility labels, source/evidence labels, and deterministic roll result DTOs; item references validate through ItemDefinitionRuntimeCatalog."
+    write_access: drop-table-system-only
+    referenced_by:
+      - docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+      - docs/architecture/adr-0021-drop-table-runtime-data-validation-deterministic-roll-and-grant-candidate-handoff.md
+    added: 2026-06-05
+    revised: "2026-06-05"
+
+  - state: ground_drop_lifecycle_state
+    status: active
+    owner_system: ground-drop-service
+    adr: docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+    interface: "GroundDropService owns ground_drop_id records, item grant intent, quantity, lifecycle, claim state, despawn policy, placement result, and drop provenance; spatial occupancy remains owned by MapSpaceState."
+    write_access: ground-drop-service-only
+    referenced_by:
+      - docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - state: pickup_claim_state
+    status: active
+    owner_system: pickup-service
+    adr: docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+    interface: "PickupService owns deterministic pickup claim resolution and staged pickup commit result state; final inventory storage remains inventory-owned and map occupancy remains MapSpaceState-owned."
+    write_access: pickup-service-only
+    referenced_by:
+      - docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - state: inventory_container_state
+    status: active
+    owner_system: inventory-system
+    adr: docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    interface: "InventoryService owns inventory containers, entries/stacks, item instance membership, quantities, container versions, and staged receive state; item template facts resolve through ItemDefinitionRuntimeCatalog."
+    write_access: inventory-system-only
+    referenced_by:
+      - docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - state: item_instance_runtime_state
+    status: active
+    owner_system: inventory-system
+    adr: docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    interface: "Project-owned item_instance_id and inventory_entry_id records for non-stackable instances and stack entries; durable identity must not use Godot Object/Node/Resource identity."
+    write_access: inventory-system-only
+    referenced_by:
+      - docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - state: equipment_slot_occupancy
+    status: active
+    owner_system: equipment-system
+    adr: docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    interface: "EquipmentService owns equipped slot occupancy, active equipped item refs, equip legality, replacement transaction state, and equipment versions."
+    write_access: equipment-system-only
+    referenced_by:
+      - docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - state: equipment_modifier_source_resolution
+    status: active
+    owner_system: equipment-system
+    adr: docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    interface: "EquipmentService resolves equipped item references into canonical Attribute source keys and AttributeSourceDelta payloads submitted through Character Attributes transactions."
+    write_access: equipment-system-only
+    referenced_by:
+      - docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+
+  - state: click_movement_runtime_state
+    status: active
+    owner_system: click-movement-system
+    adr: docs/architecture/adr-0022-click-movement-runtime-intent-path-query-input-gate-command-result-contract.md
+    interface: "Click movement owns local movement intent, pending destination, path query outcome consumption, runtime FSM state, and movement-arrived/failure facts; MapSpaceState remains authoritative for occupancy/reservation mutation."
+    write_access: click-movement-system-only
+    referenced_by:
+      - docs/architecture/adr-0022-click-movement-runtime-intent-path-query-input-gate-command-result-contract.md
+    added: 2026-06-05
+    revised: ""
 
 # Example:
 #
@@ -71,7 +225,737 @@ state_ownership: []
 #
 # pattern options: signal | direct_call | event_bus | shared_resource | rpc | none
 
-interfaces: []
+interfaces:
+  - contract: map_static_facts_lookup
+    status: active
+    pattern: direct_call
+    producer: map-data-representation
+    consumers:
+      - movement-system
+      - spawn-system
+      - drop-pickup-system
+      - combat-system
+      - rendering-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0001-map-data-representation.md
+    method_contract: "MapDefinition read-only query methods expose static logical map facts; runtime systems must not read TileMapLayer as gameplay truth."
+    referenced_by:
+      - docs/architecture/adr-0001-map-data-representation.md
+    added: 2026-06-04
+    revised: ""
+
+  - contract: spatial_query_result_schema
+    status: active
+    pattern: direct_call
+    producer: map-space-runtime
+    consumers:
+      - movement-system
+      - spawn-system
+      - drop-pickup-system
+      - combat-system
+      - rendering-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0002-typed-query-result-schema.md
+    method_contract: "Spatial queries return typed SpatialQueryResult / CellFactsSnapshot DTOs or no-allocation helpers with identical reason semantics."
+    referenced_by:
+      - docs/architecture/adr-0002-typed-query-result-schema.md
+    added: 2026-06-04
+    revised: ""
+
+  - contract: map_space_command_submission
+    status: active
+    pattern: direct_call
+    producer: map-space-runtime
+    consumers:
+      - movement-system
+      - ai-system
+      - spawn-system
+      - drop-pickup-system
+      - combat-system
+    adr: docs/architecture/adr-0003-authoritative-occupancy-reservation-update-ordering.md
+    method_contract: "Systems submit typed commands/intents to MapSpaceState; occupancy, item occupancy, and reservations are mutated only during the authoritative update phase."
+    referenced_by:
+      - docs/architecture/adr-0003-authoritative-occupancy-reservation-update-ordering.md
+    added: 2026-06-04
+    revised: ""
+
+  - contract: deterministic_y_sort_key
+    status: active
+    pattern: direct_call
+    producer: map-sort-coordinator
+    consumers:
+      - rendering-system
+      - drop-pickup-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0004-deterministic-y-sort-implementation.md
+    method_contract: "MapSortCoordinator computes explicit (anchor_y, object_type_sort_rank, stable_instance_id) keys and exposes debug evidence."
+    referenced_by:
+      - docs/architecture/adr-0004-deterministic-y-sort-implementation.md
+    added: 2026-06-04
+    revised: ""
+
+  - contract: input_projection_to_logical_cell
+    status: active
+    pattern: direct_call
+    producer: map-projection
+    consumers:
+      - movement-system
+      - drop-pickup-system
+      - target-selection-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0005-input-projection-coordinate-conversion.md
+    method_contract: "MapProjection converts UI-gated screen/viewport/world input into logical Vector2i candidates or structured invalid_coordinate results."
+    referenced_by:
+      - docs/architecture/adr-0005-input-projection-coordinate-conversion.md
+    added: 2026-06-04
+    revised: ""
+
+  - contract: attribute_stat_id_contract
+    status: active
+    pattern: direct_call
+    producer: character-attributes-system
+    consumers:
+      - combat-system
+      - equipment-system
+      - save-load-system
+      - hud-ui-system
+      - ai-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0006-attribute-data-representation-and-stat-id-typing.md
+    method_contract: "Runtime attribute consumers use project-owned typed StatId values for authoritative stat identity; StringName semantic keys are converted only at config/save/debug/localization boundaries."
+    referenced_by:
+      - docs/architecture/adr-0006-attribute-data-representation-and-stat-id-typing.md
+    added: 2026-06-04
+    revised: ""
+
+  - contract: attribute_snapshot_query_contract
+    status: active
+    pattern: direct_call
+    producer: character-attributes-system
+    consumers:
+      - combat-system
+      - equipment-system
+      - save-load-system
+      - hud-ui-system
+      - ai-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0007-attribute-snapshot-query-api-shape-and-read-only-enforcement.md
+    method_contract: "Character attribute consumers obtain current, versioned, valid/stale/invalid attribute data only through AttributeSnapshotQueryResult, stat/resource query results, or immutable-by-contract snapshot views; consumers must not read mutable runtime backing state."
+    referenced_by:
+      - docs/architecture/adr-0007-attribute-snapshot-query-api-shape-and-read-only-enforcement.md
+    added: 2026-06-04
+    revised: ""
+
+  - contract: attribute_update_result_contract
+    status: active
+    pattern: direct_call
+    producer: character-attributes-system
+    consumers:
+      - combat-system
+      - equipment-system
+      - save-load-system
+      - hud-ui-system
+      - ai-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0008-attribute-event-signal-contract-and-scene-tree-independent-core.md
+    method_contract: "All Phase 1 authoritative Character Attributes update paths return one immutable-by-contract AttributeUpdateResult envelope with transaction status, version metadata, failure reasons, and copied domain event arrays."
+    referenced_by:
+      - docs/architecture/adr-0008-attribute-event-signal-contract-and-scene-tree-independent-core.md
+    added: 2026-06-04
+    revised: ""
+
+  - contract: attribute_domain_event_contract
+    status: active
+    pattern: direct_call
+    producer: character-attributes-system
+    consumers:
+      - combat-system
+      - equipment-system
+      - save-load-system
+      - hud-ui-system
+      - ai-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0008-attribute-event-signal-contract-and-scene-tree-independent-core.md
+    method_contract: "AttributeRebuildEvent, ResourceChangedEvent, and AttributeInvalidatedEvent are compact immutable-by-contract domain event DTOs used as update/invalidation hints; current truth still comes from ADR-0007 snapshot/query APIs."
+    referenced_by:
+      - docs/architecture/adr-0008-attribute-event-signal-contract-and-scene-tree-independent-core.md
+    added: 2026-06-04
+    revised: ""
+
+  - contract: attribute_signal_adapter_contract
+    status: active
+    pattern: signal
+    producer: character-attributes-system-adapter
+    consumers:
+      - hud-ui-system
+      - equipment-ui-system
+      - growth-feedback-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0008-attribute-event-signal-contract-and-scene-tree-independent-core.md
+    signal_signature: "Typed Godot adapter signals may pass AttributeUpdateResult or concrete attribute event DTOs only after the core result is materialized; connections use signal-property/Callable style, not string-based connect."
+    referenced_by:
+      - docs/architecture/adr-0008-attribute-event-signal-contract-and-scene-tree-independent-core.md
+    added: 2026-06-04
+    revised: ""
+
+  - contract: attribute_transaction_request_contract
+    status: active
+    pattern: direct_call
+    producer: character-attributes-system
+    consumers:
+      - equipment-system
+      - progression-system
+      - save-load-system
+      - spawn-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0009-attribute-atomic-source-update-and-transaction-model.md
+    method_contract: "Structural source changes are submitted as typed AttributeTransactionRequest / AttributeSourceDelta DTOs with version expectations; Character Attributes stages, validates, calculates, and commits/rejects atomically per actor."
+    referenced_by:
+      - docs/architecture/adr-0009-attribute-atomic-source-update-and-transaction-model.md
+    added: 2026-06-04
+    revised: ""
+
+  - contract: attribute_current_resource_mutation_contract
+    status: active
+    pattern: direct_call
+    producer: character-attributes-system
+    consumers:
+      - combat-system
+      - skill-system
+      - save-load-system
+      - spawn-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0009-attribute-atomic-source-update-and-transaction-model.md
+    method_contract: "HP/MP current-value changes use AttributeCurrentResourceMutationRequest against the latest committed snapshot version, advance snapshot_version exactly once on success, never advance source_version, and do not reaggregate structural modifiers."
+    referenced_by:
+      - docs/architecture/adr-0009-attribute-atomic-source-update-and-transaction-model.md
+    added: 2026-06-04
+    revised: ""
+
+  - contract: attribute_version_expectation_contract
+    status: active
+    pattern: direct_call
+    producer: character-attributes-system
+    consumers:
+      - equipment-system
+      - progression-system
+      - combat-system
+      - save-load-system
+      - spawn-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0009-attribute-atomic-source-update-and-transaction-model.md
+    method_contract: "Attribute mutation requests carry expected source and/or snapshot versions by request kind; mismatches reject before staging/calculation and have no side effects."
+    referenced_by:
+      - docs/architecture/adr-0009-attribute-atomic-source-update-and-transaction-model.md
+    added: 2026-06-04
+    revised: ""
+
+  - contract: attribute_persistent_input_contract
+    status: active
+    pattern: direct_call
+    producer: save-load-system
+    consumers:
+      - character-attributes-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0010-attribute-save-load-persistence-boundary-base-current-modifier-sources.md
+    method_contract: "Save/Load supplies AttributePersistentInput as semantic-key authoritative input data; Character Attributes validates, migrates, normalizes, and rebuilds runtime state instead of treating derived snapshots as save truth."
+    referenced_by:
+      - docs/architecture/adr-0010-attribute-save-load-persistence-boundary-base-current-modifier-sources.md
+    added: 2026-06-04
+    revised: ""
+
+  - contract: attribute_load_rebuild_contract
+    status: active
+    pattern: direct_call
+    producer: character-attributes-system
+    consumers:
+      - save-load-system
+      - hud-ui-system
+      - combat-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0010-attribute-save-load-persistence-boundary-base-current-modifier-sources.md
+    method_contract: "Attribute load requests enter Character Attributes through a typed LOAD_REPLACE_AUTHORITY transaction; successful loads commit through ADR-0009 final swap and rejected loads leave committed source/current/snapshot/version state unchanged."
+    referenced_by:
+      - docs/architecture/adr-0010-attribute-save-load-persistence-boundary-base-current-modifier-sources.md
+    added: 2026-06-04
+    revised: ""
+
+  - contract: attribute_load_migration_policy_contract
+    status: active
+    pattern: direct_call
+    producer: save-load-system
+    consumers:
+      - character-attributes-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0010-attribute-save-load-persistence-boundary-base-current-modifier-sources.md
+    method_contract: "Save/Load orchestration selects explicit versioned migration/recovery policy before submitting load data; Character Attributes applies only authorized source/status-aware corrections and emits deterministic correction or failure reasons."
+    referenced_by:
+      - docs/architecture/adr-0010-attribute-save-load-persistence-boundary-base-current-modifier-sources.md
+    added: 2026-06-04
+    revised: ""
+
+  - contract: attribute_fixture_config_loading_contract
+    status: active
+    pattern: direct_call
+    producer: character-attributes-system
+    consumers:
+      - character-attributes-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0011-attribute-fixture-config-loading-strategy-mvp-provisional-values.md
+    method_contract: "Phase 1 Character Attributes receives MVP provisional config from centralized typed fixture/config factories or injected payloads, then validates and normalizes them before gameplay use."
+    referenced_by:
+      - docs/architecture/adr-0011-attribute-fixture-config-loading-strategy-mvp-provisional-values.md
+    added: 2026-06-04
+    revised: ""
+
+  - contract: attribute_config_validation_contract
+    status: active
+    pattern: direct_call
+    producer: character-attributes-system
+    consumers:
+      - character-attributes-system
+      - save-load-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0011-attribute-fixture-config-loading-strategy-mvp-provisional-values.md
+    method_contract: "Attribute config validation deterministically rejects missing rows, unknown keys, invalid bounds/pairs, unsupported modifier operations, invalid evidence labels, all-zero combat power weights, and version mismatches before snapshot publication."
+    referenced_by:
+      - docs/architecture/adr-0011-attribute-fixture-config-loading-strategy-mvp-provisional-values.md
+    added: 2026-06-04
+    revised: ""
+
+  - contract: attribute_provisional_source_status_contract
+    status: active
+    pattern: direct_call
+    producer: character-attributes-system
+    consumers:
+      - save-load-system
+      - equipment-system
+      - combat-system
+      - hud-ui-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0011-attribute-fixture-config-loading-strategy-mvp-provisional-values.md
+    method_contract: "Every MVP provisional attribute fixture/config value carries source_status; openmir2_verified labels require evidence ID/source reference and unlabeled provisional values are invalid."
+    referenced_by:
+      - docs/architecture/adr-0011-attribute-fixture-config-loading-strategy-mvp-provisional-values.md
+    added: 2026-06-04
+    revised: ""
+
+  - contract: attribute_formula_blocking_test_contract
+    status: active
+    pattern: direct_call
+    producer: character-attributes-system
+    consumers:
+      - character-attributes-system
+      - combat-system
+      - equipment-system
+      - save-load-system
+      - hud-ui-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0012-attribute-formula-only-gut-test-strategy-without-scene-tree-ui-autoload.md
+    method_contract: "Character Attributes Phase 1 blocking formula/contract evidence comes from GUT unit tests that directly instantiate injectable RefCounted/service cores, typed DTOs, validated config, fake sinks, and fake counters; downstream integration, UI, manual, scene, or IO evidence may supplement but must not replace these tests."
+    referenced_by:
+      - docs/architecture/adr-0012-attribute-formula-only-gut-test-strategy-without-scene-tree-ui-autoload.md
+    added: 2026-06-04
+    revised: ""
+
+  - contract: attribute_growth_display_proxy_contract
+    status: active
+    pattern: direct_call
+    producer: character-attributes-system
+    consumers:
+      - equipment-system
+      - equipment-ui-system
+      - hud-ui-system
+      - growth-feedback-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0014-attribute-combat-power-main-stat-display-proxy-ownership.md
+    method_contract: "Character Attributes owns provisional display-only combat_power before/after/delta, primary_comparison_stat, visible/hidden delta rows, growth_reason, growth_salience, and display proxy status through immutable-by-contract DTOs returned by update/preview/query result wrappers; consumers present or compare them but must not treat them as combat, legality, save, or item value authority."
+    referenced_by:
+      - docs/architecture/adr-0014-attribute-combat-power-main-stat-display-proxy-ownership.md
+    added: 2026-06-04
+    revised: ""
+
+  - contract: item_definition_query_projection_contract
+    status: active
+    pattern: direct_call
+    producer: item-definition-system
+    consumers:
+      - drop-table-system
+      - drop-pickup-system
+      - inventory-system
+      - equipment-system
+      - equipment-ui-system
+      - hud-ui-system
+      - save-load-system
+      - economy-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0015-item-definition-runtime-data-validation-query-and-versioning.md
+    method_contract: "Consumers resolve item references through ItemDefinitionRuntimeCatalog query/projection DTOs carrying reference resolution, validation, runtime eligibility, UI availability, display/classification/equipment/presentation views, and debug reasons; consumers must not read raw authoring rows or mutable runtime tables."
+    referenced_by:
+      - docs/architecture/adr-0015-item-definition-runtime-data-validation-query-and-versioning.md
+      - docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+      - docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+      - docs/architecture/adr-0021-drop-table-runtime-data-validation-deterministic-roll-and-grant-candidate-handoff.md
+    added: 2026-06-04
+    revised: "2026-06-05"
+
+  - contract: item_definition_validation_loading_contract
+    status: active
+    pattern: direct_call
+    producer: item-definition-system
+    consumers:
+      - item-definition-system
+      - drop-table-system
+      - inventory-system
+      - equipment-system
+      - save-load-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0015-item-definition-runtime-data-validation-query-and-versioning.md
+    method_contract: "Item Definition fixture/import payloads are deterministically schema-validated, source/evidence-labeled, version-checked, normalized into immutable-by-contract runtime rows, and indexed before normal gameplay can spawn, display, equip, save, or migrate them."
+    referenced_by:
+      - docs/architecture/adr-0015-item-definition-runtime-data-validation-query-and-versioning.md
+      - docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+      - docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+      - docs/architecture/adr-0021-drop-table-runtime-data-validation-deterministic-roll-and-grant-candidate-handoff.md
+    added: 2026-06-04
+    revised: "2026-06-05"
+
+  - contract: openmir2_contract_query_contract
+    status: active
+    pattern: direct_call
+    producer: openmir2-evidence-governance
+    consumers:
+      - map-data-representation
+      - map-space-runtime
+      - movement-system
+      - combat-system
+      - drop-table-system
+      - drop-pickup-system
+      - inventory-system
+      - equipment-system
+      - item-definition-system
+      - character-attributes-system
+      - save-load-system
+      - qa-debug-tools
+      - resource-map-conversion-tools
+      - protocol-spike-tools
+    adr: docs/architecture/adr-0016-openmir2-evidence-mapping-registry-and-provisional-contract-governance.md
+    method_contract: "Tooling, bootstrap validation, review skills, and story readiness may query Accepted OpenMir2 provisional contracts through structured result DTOs; missing, low-evidence, conflicting, unversioned, or non-Accepted contracts fail closed."
+    referenced_by:
+      - docs/architecture/adr-0016-openmir2-evidence-mapping-registry-and-provisional-contract-governance.md
+    added: 2026-06-05
+    revised: ""
+
+  - contract: openmir2_divergence_record_contract
+    status: active
+    pattern: direct_call
+    producer: openmir2-evidence-governance
+    consumers:
+      - downstream-gdds
+      - architecture-review
+      - qa-debug-tools
+    adr: docs/architecture/adr-0016-openmir2-evidence-mapping-registry-and-provisional-contract-governance.md
+    method_contract: "Any downstream divergence from an E3/E4 OpenMir2 contract records affected contract ID/version, reason, preserved semantics, sacrificed semantics, affected systems, and validation evidence."
+    referenced_by:
+      - docs/architecture/adr-0016-openmir2-evidence-mapping-registry-and-provisional-contract-governance.md
+    added: 2026-06-05
+    revised: ""
+
+  - contract: drop_table_roll_contract
+    status: active
+    pattern: direct_call
+    producer: drop-table-system
+    consumers:
+      - death-system
+      - drop-pickup-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0021-drop-table-runtime-data-validation-deterministic-roll-and-grant-candidate-handoff.md
+    method_contract: "DropTableRuntimeCatalog validates drop pools against ItemDefinitionRuntimeCatalog and produces deterministic status-bearing DropRollResult DTOs from injected RNG/seed context and source/death context."
+    referenced_by:
+      - docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+      - docs/architecture/adr-0021-drop-table-runtime-data-validation-deterministic-roll-and-grant-candidate-handoff.md
+    added: 2026-06-05
+    revised: "2026-06-05"
+
+  - contract: drop_table_item_definition_validation_contract
+    status: active
+    pattern: direct_call
+    producer: drop-table-system
+    consumers:
+      - item-definition-system
+      - drop-pickup-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0021-drop-table-runtime-data-validation-deterministic-roll-and-grant-candidate-handoff.md
+    method_contract: "Normal drop table rows store item references only and fail closed unless ItemDefinitionRuntimeCatalog resolves them as active, validated, spawn-eligible definitions."
+    referenced_by:
+      - docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+      - docs/architecture/adr-0021-drop-table-runtime-data-validation-deterministic-roll-and-grant-candidate-handoff.md
+    added: 2026-06-05
+    revised: "2026-06-05"
+
+  - contract: drop_grant_candidate_handoff_contract
+    status: active
+    pattern: direct_call
+    producer: drop-table-system
+    consumers:
+      - drop-pickup-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0021-drop-table-runtime-data-validation-deterministic-roll-and-grant-candidate-handoff.md
+    method_contract: "Drop Table emits immutable-by-contract DropGrantCandidate DTOs containing item_id, item_definition_version, quantity intent, drop table/group/row IDs, source context, RNG provenance, source status, and evidence reference only; GroundDropService owns materialization, placement, lifecycle, pickup, and any downstream placement failure handling."
+    referenced_by:
+      - docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+      - docs/architecture/adr-0021-drop-table-runtime-data-validation-deterministic-roll-and-grant-candidate-handoff.md
+    added: 2026-06-05
+    revised: ""
+
+  - contract: ground_drop_map_space_command_contract
+    status: active
+    pattern: direct_call
+    producer: drop-pickup-system
+    consumers:
+      - map-space-runtime
+      - qa-debug-tools
+    adr: docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+    method_contract: "Ground item placement and removal mutate spatial item occupancy only through MapSpaceState PLACE_ITEM / REMOVE_ITEM commands referencing stable ground_drop_id values."
+    referenced_by:
+      - docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - contract: pickup_commit_transaction_contract
+    status: active
+    pattern: direct_call
+    producer: pickup-service
+    consumers:
+      - inventory-system
+      - map-space-runtime
+      - hud-ui-system
+      - audio-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+    method_contract: "Pickup commit validates ground drop availability, verifies spatial eligibility, resolves deterministic claim, stages inventory receive, stages MapSpaceState REMOVE_ITEM, and publishes success only after no-half-commit conditions pass."
+    referenced_by:
+      - docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - contract: inventory_staged_receive_contract
+    status: active
+    pattern: direct_call
+    producer: inventory-system
+    consumers:
+      - pickup-service
+      - drop-pickup-system
+      - save-load-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    method_contract: "InventoryService stages, aborts, and commits receive requests through status-bearing DTOs; COMMIT_READY reserves exact container/stack/entry outcome and final commit is a no-yield final swap."
+    referenced_by:
+      - docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - contract: inventory_item_reference_validation_contract
+    status: active
+    pattern: direct_call
+    producer: inventory-system
+    consumers:
+      - item-definition-system
+      - pickup-service
+      - save-load-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    method_contract: "Inventory stores item references and allowed instance fields only; template facts, stack policy, type, quality, display, and equipment payload availability resolve through ItemDefinitionRuntimeCatalog."
+    referenced_by:
+      - docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - contract: equipment_equip_transaction_contract
+    status: active
+    pattern: direct_call
+    producer: equipment-system
+    consumers:
+      - inventory-system
+      - character-attributes-system
+      - equipment-ui-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    method_contract: "EquipmentService builds Inventory/Equipment candidates, validates item definition/equip legality, submits Character Attributes transaction, finalizes all domains coherently, and publishes no observable partial equip state."
+    referenced_by:
+      - docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - contract: equipment_attribute_source_delta_contract
+    status: active
+    pattern: direct_call
+    producer: equipment-system
+    consumers:
+      - character-attributes-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    method_contract: "Equipment submits canonical remove/add AttributeSourceDelta payloads through AttributeTransactionRequest; it never directly mutates Character Attributes committed source sets."
+    referenced_by:
+      - docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - contract: equipment_attribute_preview_contract
+    status: active
+    pattern: direct_call
+    producer: equipment-system
+    consumers:
+      - character-attributes-system
+      - equipment-ui-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    method_contract: "Equipment resolves hypothetical preview source payloads and Character Attributes returns pure non-authoritative AttributePreviewResult/display proxy data with no Inventory, Equipment, Attribute commit, version increment, or event emission."
+    referenced_by:
+      - docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - contract: inventory_equipment_save_boundary_contract
+    status: active
+    pattern: direct_call
+    producer: save-load-system
+    consumers:
+      - inventory-system
+      - equipment-system
+      - character-attributes-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    method_contract: "Inventory persists item instance/entry/container truth and Equipment persists equipped slot truth; equipment-derived Character Attributes sources rebuild from Equipment + ItemDefinition rather than acting as independent save truth."
+    referenced_by:
+      - docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - contract: map_distance_fact_contract
+    status: active
+    pattern: direct_call
+    producer: map-distance-service
+    consumers:
+      - movement-system
+      - combat-system
+      - drop-pickup-system
+      - spawn-system
+      - ai-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0019-map-distance-and-movement-legality-contract.md
+    method_contract: "MapDistanceService derives canonical logical-cell distance facts from two Vector2i cells only; consumers own their own thresholds and final action legality."
+    referenced_by:
+      - docs/architecture/adr-0019-map-distance-and-movement-legality-contract.md
+    added: 2026-06-05
+    revised: ""
+
+  - contract: movement_legality_query_contract
+    status: active
+    pattern: direct_call
+    producer: movement-legality-service
+    consumers:
+      - movement-system
+      - ai-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0019-map-distance-and-movement-legality-contract.md
+    method_contract: "MovementLegalityService performs read-only single-step/request legality evaluation from logical cells, MapDefinition static facts, and MapSpaceState snapshots; final occupancy/reservation mutation and conflict ordering remain MapSpaceState-owned."
+    referenced_by:
+      - docs/architecture/adr-0019-map-distance-and-movement-legality-contract.md
+    added: 2026-06-05
+    revised: ""
+
+  - contract: map_source_conversion_pipeline
+    status: active
+    pattern: direct_call
+    producer: resource-map-conversion-tools
+    consumers:
+      - map-data-representation
+      - qa-debug-tools
+      - editor-tooling
+      - ci-validation
+    adr: docs/architecture/adr-0020-resource-map-conversion-pipeline-and-validation-boundary.md
+    method_contract: "Map conversion tooling normalizes source envelopes into MapConversionInput, bakes candidate MapDefinition Resources or fixture-equivalent outputs, and emits structured conversion/validation reports; runtime gameplay does not query source envelopes or conversion pipeline."
+    referenced_by:
+      - docs/architecture/adr-0020-resource-map-conversion-pipeline-and-validation-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - contract: map_conversion_report_contract
+    status: active
+    pattern: direct_call
+    producer: resource-map-conversion-tools
+    consumers:
+      - qa-debug-tools
+      - architecture-review
+      - story-readiness
+      - ci-validation
+    adr: docs/architecture/adr-0020-resource-map-conversion-pipeline-and-validation-boundary.md
+    method_contract: "MapConversionReport and MapValidationReport expose deterministic status, provenance, source labels, and fail-closed validation reasons for tooling/bootstrap evidence."
+    referenced_by:
+      - docs/architecture/adr-0020-resource-map-conversion-pipeline-and-validation-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+
+  - contract: click_movement_input_gate_contract
+    status: active
+    pattern: direct_call
+    producer: input-routing-system
+    consumers:
+      - click-movement-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0022-click-movement-runtime-intent-path-query-input-gate-command-result-contract.md
+    method_contract: "MovementInputGateResult reports same-event named action match, UI ownership, input source, and world-point availability; UI-consumed or unknown ownership fails closed before MapProjection."
+    referenced_by:
+      - docs/architecture/adr-0022-click-movement-runtime-intent-path-query-input-gate-command-result-contract.md
+    added: 2026-06-05
+    revised: ""
+
+  - contract: click_movement_path_query_contract
+    status: active
+    pattern: direct_call
+    producer: click-movement-system
+    consumers:
+      - click-movement-system
+      - ai-system
+      - combat-system
+      - drop-pickup-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0022-click-movement-runtime-intent-path-query-input-gate-command-result-contract.md
+    method_contract: "ClickPathQueryResult returns typed orthogonal-only path status, ordered Vector2i path cells, path budget facts, unresolved policy fields, and canonical reasons; no local string path statuses."
+    referenced_by:
+      - docs/architecture/adr-0022-click-movement-runtime-intent-path-query-input-gate-command-result-contract.md
+    added: 2026-06-05
+    revised: ""
+
+  - contract: click_movement_command_result_consumption_contract
+    status: active
+    pattern: direct_call
+    producer: map-space-runtime
+    consumers:
+      - click-movement-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0022-click-movement-runtime-intent-path-query-input-gate-command-result-contract.md
+    method_contract: "Click movement consumes MapSpaceState reserve/commit/cancel results with accepted/rejected status, authoritative sequence, typed reasons, active-reservation-after-result, and last committed cell; command failures trigger correction rather than local mutation."
+    referenced_by:
+      - docs/architecture/adr-0022-click-movement-runtime-intent-path-query-input-gate-command-result-contract.md
+    added: 2026-06-05
+    revised: ""
+
+  - contract: click_movement_tuning_contract
+    status: active
+    pattern: direct_call
+    producer: click-movement-system
+    consumers:
+      - click-movement-system
+      - qa-debug-tools
+    adr: docs/architecture/adr-0022-click-movement-runtime-intent-path-query-input-gate-command-result-contract.md
+    method_contract: "ClickMovementTuning supplies data-driven movement speed, path budgets, and MVP policy booleans; invalid speed or path budget config fails validation instead of hardcoding or silent clamp."
+    referenced_by:
+      - docs/architecture/adr-0022-click-movement-runtime-intent-path-query-input-gate-command-result-contract.md
+    added: 2026-06-05
+    revised: ""
 
 # Example:
 #
@@ -131,7 +1015,449 @@ performance_budgets: []
 # Register an API decision when the choice is non-obvious and other ADRs might
 # make a different choice for the same purpose without knowing this was decided.
 
-api_decisions: []
+api_decisions:
+  - purpose: logical_map_data_source
+    status: active
+    api: "Custom Resource `MapDefinition` with flattened `Packed*Array` / typed array fields"
+    not: "TileMapLayer-authoritative gameplay data"
+    adr: docs/architecture/adr-0001-map-data-representation.md
+    reason: "Logical gameplay map facts must remain unit-testable, deterministic, and independent of visual tile edits."
+    referenced_by:
+      - docs/architecture/adr-0001-map-data-representation.md
+    added: 2026-06-04
+    revised: ""
+
+  - purpose: visual_tile_layer
+    status: active
+    api: "Godot `TileMapLayer` for visual/editor presentation only"
+    not: "Deprecated `TileMap`, or TileMapLayer as gameplay authority"
+    adr: docs/architecture/adr-0001-map-data-representation.md
+    reason: "Godot 4.6.3 deprecates TileMap; visual layers may assist validation but must not override MapDefinition gameplay facts."
+    referenced_by:
+      - docs/architecture/adr-0001-map-data-representation.md
+    added: 2026-06-04
+    revised: ""
+
+  - purpose: spatial_query_schema_representation
+    status: active
+    api: "Typed GDScript enums plus RefCounted DTOs (`SpatialQueryResult`, `CellFactsSnapshot`)"
+    not: "Dictionary-only payloads or StringName-only internal reason authority"
+    adr: docs/architecture/adr-0002-typed-query-result-schema.md
+    reason: "Spatial query semantics must be type-safe, testable, and consistent across movement, spawn, drop, pickup, combat, rendering, and QA/debug tools."
+    referenced_by:
+      - docs/architecture/adr-0002-typed-query-result-schema.md
+    added: 2026-06-04
+    revised: ""
+
+  - purpose: map_space_update_authority
+    status: active
+    api: "MapSpaceState authoritative command queue with deterministic created_sequence ordering"
+    not: "Immediate mutation by actor/controller nodes or signal callback order"
+    adr: docs/architecture/adr-0003-authoritative-occupancy-reservation-update-ordering.md
+    reason: "Actor occupancy, item occupancy, and reservations must mutate through one deterministic authority."
+    referenced_by:
+      - docs/architecture/adr-0003-authoritative-occupancy-reservation-update-ordering.md
+    added: 2026-06-04
+    revised: ""
+
+  - purpose: y_sort_presentation_ordering
+    status: active
+    api: "MapSortCoordinator computes explicit (anchor_y, object_type_sort_rank, stable_instance_id) keys"
+    not: "Deprecated YSort nodes or incidental scene-tree insertion order"
+    adr: docs/architecture/adr-0004-deterministic-y-sort-implementation.md
+    reason: "Presentation order must be deterministic and testable while remaining separate from gameplay legality."
+    referenced_by:
+      - docs/architecture/adr-0004-deterministic-y-sort-implementation.md
+    added: 2026-06-04
+    revised: ""
+
+  - purpose: input_projection_service
+    status: active
+    api: "MapProjection service converts UI-gated screen/viewport/world input into logical Vector2i candidates"
+    not: "Controller-local conversion or TileMapLayer-authoritative coordinate lookup"
+    adr: docs/architecture/adr-0005-input-projection-coordinate-conversion.md
+    reason: "Movement, pickup, targeting, and debug tools need one shared coordinate conversion contract."
+    referenced_by:
+      - docs/architecture/adr-0005-input-projection-coordinate-conversion.md
+    added: 2026-06-04
+    revised: ""
+
+
+  - purpose: click_movement_runtime_contract
+    status: active
+    api: "Typed RefCounted DTOs/enums for MovementInputGateResult, ClickMovementIntent, ClickPathQueryResult, ClickMovementTuning, and command-result adapters"
+    not: "Controller-local dictionaries, local strings, Vector2i.ZERO sentinels, frame-polling movement intents, Godot Navigation/Physics/TileMap/Y-sort authority, or direct singleton-only core logic"
+    adr: docs/architecture/adr-0022-click-movement-runtime-intent-path-query-input-gate-command-result-contract.md
+    reason: "Approved click movement requires typed input/path/command contracts, same-event UI gate ownership, deterministic orthogonal path planning, and scene-tree-independent testable core logic before implementation Done."
+    referenced_by:
+      - docs/architecture/adr-0022-click-movement-runtime-intent-path-query-input-gate-command-result-contract.md
+    added: 2026-06-05
+    revised: ""
+
+  - purpose: attribute_runtime_stat_identity
+    status: active
+    api: "Project-owned contiguous append-only typed enum/int StatId plus normalized dense runtime vectors"
+    not: "Raw strings, StringName-only maps, Resource objects, or enum ordinals as durable save/config truth"
+    adr: docs/architecture/adr-0006-attribute-data-representation-and-stat-id-typing.md
+    reason: "Attribute calculations, modifiers, resource updates, combat reads, UI snapshots, and tests need stable, compact, validated stat identity without hot-path string lookup or shared Resource mutation."
+    referenced_by:
+      - docs/architecture/adr-0006-attribute-data-representation-and-stat-id-typing.md
+    added: 2026-06-04
+    revised: ""
+
+  - purpose: attribute_snapshot_read_only_representation
+    status: active
+    api: "RefCounted immutable-by-contract AttributeSnapshot value objects returned through query result wrappers, with defensive-copy collection access and duplicated stale/invalid status metadata"
+    not: "Mutable dictionaries, public mutable DTO vars, Resource snapshots, raw snapshot-only APIs without status wrappers, or eager debug trace payloads"
+    adr: docs/architecture/adr-0007-attribute-snapshot-query-api-shape-and-read-only-enforcement.md
+    reason: "Combat, equipment, HUD, save/load, AI, and QA/debug consumers need safe read access to versioned attribute truth without mutating runtime backing state or bypassing stale/invalid status semantics."
+    referenced_by:
+      - docs/architecture/adr-0007-attribute-snapshot-query-api-shape-and-read-only-enforcement.md
+    added: 2026-06-04
+    revised: ""
+
+  - purpose: attribute_scene_tree_independent_core
+    status: active
+    api: "Injectable RefCounted/service Character Attributes core returning AttributeUpdateResult / AttributePreviewResult DTOs"
+    not: "Node-owned attribute authority, Autoload attribute event bus, scene signal source, or SceneTree-dependent formula/update core"
+    adr: docs/architecture/adr-0008-attribute-event-signal-contract-and-scene-tree-independent-core.md
+    reason: "Attribute formulas, resource mutations, event coalescing, and failure semantics must be unit-testable without SceneTree, Autoload, Node lifecycle, or signal callback order."
+    referenced_by:
+      - docs/architecture/adr-0008-attribute-event-signal-contract-and-scene-tree-independent-core.md
+    added: 2026-06-04
+    revised: ""
+
+  - purpose: attribute_event_sink_contract
+    status: active
+    api: "Typed RefCounted AttributeEventSink contract with no-op/fake sinks and optional CallableAttributeEventSink adapter"
+    not: "Changing the core sink contract per consumer, invoking sinks before result materialization, or treating sink failure as transaction failure"
+    adr: docs/architecture/adr-0008-attribute-event-signal-contract-and-scene-tree-independent-core.md
+    reason: "Tests and adapters need deterministic event capture while transaction outcome remains fully decided before any notification side effect."
+    referenced_by:
+      - docs/architecture/adr-0008-attribute-event-signal-contract-and-scene-tree-independent-core.md
+    added: 2026-06-04
+    revised: ""
+
+  - purpose: attribute_atomic_candidate_commit_model
+    status: active
+    api: "Actor-local synchronous transaction using copied staged candidate state and final commit/swap before AttributeUpdateResult dispatch"
+    not: "Immediate committed source mutation with manual rollback, partial publish, async transaction, or candidate state exposure"
+    adr: docs/architecture/adr-0009-attribute-atomic-source-update-and-transaction-model.md
+    reason: "Equipment, progression, load, spawn, and debug source changes must not expose intermediate or partially failed attribute state to combat, UI, save/load, or QA consumers."
+    referenced_by:
+      - docs/architecture/adr-0009-attribute-atomic-source-update-and-transaction-model.md
+    added: 2026-06-04
+    revised: ""
+
+  - purpose: attribute_current_resource_snapshot_version_policy
+    status: active
+    api: "Current HP/MP mutations publish a new AttributeSnapshot and advance snapshot_version exactly once while leaving source_version unchanged"
+    not: "Reaggregating structural modifiers for HP/MP current-value changes, or mutating current resources without versioned snapshot publication"
+    adr: docs/architecture/adr-0009-attribute-atomic-source-update-and-transaction-model.md
+    reason: "Phase 1 snapshots include current resource values, so damage/heal/spend/restore must produce observable versioned read truth without structural rebuild cost."
+    referenced_by:
+      - docs/architecture/adr-0009-attribute-atomic-source-update-and-transaction-model.md
+    added: 2026-06-04
+    revised: ""
+
+  - purpose: attribute_persistence_semantic_key_boundary
+    status: active
+    api: "Attribute save payloads encode durable stat/resource/source identity as semantic strings that load normalization validates and maps to current StringName / StatId registry identities"
+    not: "Durable StatId enum ordinals, dense vectors, or direct runtime storage serialization"
+    adr: docs/architecture/adr-0010-attribute-save-load-persistence-boundary-base-current-modifier-sources.md
+    reason: "Attribute saves must survive registry evolution and remain migration-friendly while runtime formulas continue to use compact validated StatId values."
+    referenced_by:
+      - docs/architecture/adr-0010-attribute-save-load-persistence-boundary-base-current-modifier-sources.md
+    added: 2026-06-04
+    revised: ""
+
+  - purpose: attribute_load_authority_replace_policy
+    status: active
+    api: "Explicit LOAD_REPLACE_AUTHORITY transaction policy commits loaded attribute authority through ADR-0009 candidate rebuild and final swap, advancing source_version and snapshot_version once on success"
+    not: "Direct runtime overwrite, versionless load mutation, or save-file data bypassing validation and candidate materialization"
+    adr: docs/architecture/adr-0010-attribute-save-load-persistence-boundary-base-current-modifier-sources.md
+    reason: "Loading authoritative attribute state must remain atomic, validated, and no-side-effect on failure while allowing save/load orchestration to restore persisted inputs."
+    referenced_by:
+      - docs/architecture/adr-0010-attribute-save-load-persistence-boundary-base-current-modifier-sources.md
+    added: 2026-06-04
+    revised: ""
+
+  - purpose: attribute_save_write_result_boundary
+    status: active
+    api: "Save/Load orchestration reports file read/write success separately from Character Attributes AttributeUpdateResult load acceptance"
+    not: "Treating attribute load acceptance, signal delivery, or FileAccess calls as proof that a save slot was successfully written"
+    adr: docs/architecture/adr-0010-attribute-save-load-persistence-boundary-base-current-modifier-sources.md
+    reason: "Godot FileAccess operations can fail independently from attribute semantic validation; both result domains must be handled explicitly."
+    referenced_by:
+      - docs/architecture/adr-0010-attribute-save-load-persistence-boundary-base-current-modifier-sources.md
+    added: 2026-06-04
+    revised: ""
+
+  - purpose: attribute_mvp_fixture_authoring_strategy
+    status: active
+    api: "Centralized typed GDScript fixture/config factories plus primitive semantic-key payloads for Phase 1 MVP provisional values"
+    not: "Scattered formula constants, direct .tres runtime authority, loose JSON runtime dictionaries, or full external pipeline requirement before Phase 1"
+    adr: docs/architecture/adr-0011-attribute-fixture-config-loading-strategy-mvp-provisional-values.md
+    reason: "Phase 1 needs deterministic formula-only tests and explicit config ownership without prematurely building a full designer-facing data pipeline."
+    referenced_by:
+      - docs/architecture/adr-0011-attribute-fixture-config-loading-strategy-mvp-provisional-values.md
+    added: 2026-06-04
+    revised: ""
+
+  - purpose: attribute_config_normalization_boundary
+    status: active
+    api: "Semantic fixture/config input is recursively validated and normalized into immutable-by-contract runtime config tables before Character Attributes formulas or transactions use it"
+    not: "Raw Dictionary/JSON/Resource payloads, ResourceLoader cache, enum ordinal arrays, or positional dense vector fixtures as runtime config authority"
+    adr: docs/architecture/adr-0011-attribute-fixture-config-loading-strategy-mvp-provisional-values.md
+    reason: "Runtime formula and rebuild logic need typed, deterministic, versioned config tables while preserving migration-friendly external semantic keys."
+    referenced_by:
+      - docs/architecture/adr-0011-attribute-fixture-config-loading-strategy-mvp-provisional-values.md
+    added: 2026-06-04
+    revised: ""
+
+  - purpose: attribute_formula_unit_test_harness
+    status: active
+    api: "GUT formula/contract tests directly instantiate injectable RefCounted/service Character Attributes core objects, typed DTOs, factory/normalizer outputs, fake sinks, fake counters, and committed-state probes"
+    not: "SceneTree, Node lifecycle, Autoload, UI/Control, ResourceLoader/FileAccess, real .tres/.tscn, timers/frames, profiler timing, or signal callback order as blocking formula/contract test authority"
+    adr: docs/architecture/adr-0012-attribute-formula-only-gut-test-strategy-without-scene-tree-ui-autoload.md
+    reason: "Character Attributes formula, validation, snapshot, transaction, preview, event/result, debug trace, and aliasing behavior must be proven deterministically without scene/runtime integration dependencies masking core defects."
+    referenced_by:
+      - docs/architecture/adr-0012-attribute-formula-only-gut-test-strategy-without-scene-tree-ui-autoload.md
+    added: 2026-06-04
+    revised: ""
+
+  - purpose: attribute_resource_authoring_boundary
+    status: active
+    api: "Future .tres / Godot Resource Character Attributes config is a schema-driven authoring envelope imported into primitive semantic payloads and ADR-0011 normalized DTO/table data"
+    not: "Loaded or duplicated Resource graphs, ResourceLoader cache entries, broad Resource reflection, or Resource-backed runtime config/formula authority"
+    adr: docs/architecture/adr-0013-attribute-godot-resource-duplication-shared-reference-policy-if-tres-resources-are-used.md
+    reason: "Godot Resources are mutable reference objects that may be shared/cached; Character Attributes runtime, save truth, formula tests, snapshots, transactions, and config tables require normalized project-owned DTO/table authority."
+    referenced_by:
+      - docs/architecture/adr-0013-attribute-godot-resource-duplication-shared-reference-policy-if-tres-resources-are-used.md
+    added: 2026-06-04
+    revised: ""
+
+  - purpose: attribute_display_proxy_authority
+    status: active
+    api: "Character Attributes computes provisional display-only combat_power, primary comparison stat, growth salience, and visible/hidden delta DTOs from validated snapshots/config/results/previews"
+    not: "UI recomputation, Combat damage/TTK authority, Equipment legality/value authority, Save truth, OpenMir2-authentic scoring, or stale/invalid celebration trigger"
+    adr: docs/architecture/adr-0014-attribute-combat-power-main-stat-display-proxy-ownership.md
+    reason: "Player-facing growth needs consistent formula-tested handoff data while preserving combat, equipment, UI, save/load, and presentation boundaries."
+    referenced_by:
+      - docs/architecture/adr-0014-attribute-combat-power-main-stat-display-proxy-ownership.md
+    added: 2026-06-04
+    revised: ""
+
+  - purpose: item_definition_runtime_catalog_authority
+    status: active
+    api: "Schema-validated and normalized ItemDefinitionRuntimeCatalog with immutable-by-contract rows, dense/semantic indexes, lifecycle/evidence status, and versioned source metadata"
+    not: "Raw fixture dictionaries, ad hoc item dictionaries, mutable Resources, scene items, inventory stacks, or save payloads as definition authority"
+    adr: docs/architecture/adr-0015-item-definition-runtime-data-validation-query-and-versioning.md
+    reason: "Drops, inventory, equipment, UI, save/load, economy, and QA/debug tools need one deterministic item template truth with explicit missing/invalid/deprecated/provisional semantics."
+    referenced_by:
+      - docs/architecture/adr-0015-item-definition-runtime-data-validation-query-and-versioning.md
+    added: 2026-06-04
+    revised: ""
+
+  - purpose: item_reference_identity_boundary
+    status: active
+    api: "Durable item references use semantic item_id strings plus schema/catalog version metadata and resolve to runtime typed ItemTypeId/index handles only after catalog validation"
+    not: "Persisted runtime dense indexes, enum ordinals, display names, Resource paths, or scene node names as durable item identity"
+    adr: docs/architecture/adr-0015-item-definition-runtime-data-validation-query-and-versioning.md
+    reason: "Item saves, drop tables, equipment links, and migrations must survive catalog evolution while runtime lookup remains compact and type-checked."
+    referenced_by:
+      - docs/architecture/adr-0015-item-definition-runtime-data-validation-query-and-versioning.md
+    added: 2026-06-04
+    revised: ""
+
+  - purpose: item_definition_consumer_query_boundary
+    status: active
+    api: "Status-bearing ItemDefinitionQueryResult / projection DTOs for display, stack, classification, equipment candidate, modifier declaration, and debug reason access"
+    not: "Consumers reading raw catalog rows, mutable tables, loose dictionaries, or silently fabricating fallback item definitions"
+    adr: docs/architecture/adr-0015-item-definition-runtime-data-validation-query-and-versioning.md
+    reason: "Consumers need typed, stale/missing/deprecated/provisional-aware access without duplicating validation or bypassing catalog authority."
+    referenced_by:
+      - docs/architecture/adr-0015-item-definition-runtime-data-validation-query-and-versioning.md
+    added: 2026-06-04
+    revised: ""
+
+  - purpose: openmir2_evidence_registry_source_format_policy
+    status: active
+    api: "Offline source documents normalized into typed evidence/contract/divergence DTO tables; Godot-native tooling uses approved built-in-readable formats or typed fixtures"
+    not: "YAML parser dependency in Godot-native tooling without explicit approval, or multiple source files silently overriding the same evidence/contract ID"
+    adr: docs/architecture/adr-0016-openmir2-evidence-mapping-registry-and-provisional-contract-governance.md
+    reason: "OpenMir2 behavior evidence needs stable, deterministic, auditable source governance without introducing unapproved parser dependencies or conflicting local truth."
+    referenced_by:
+      - docs/architecture/adr-0016-openmir2-evidence-mapping-registry-and-provisional-contract-governance.md
+    added: 2026-06-05
+    revised: ""
+
+  - purpose: openmir2_contract_readiness_gate
+    status: active
+    api: "Structured OpenMir2ContractReadinessResult for Accepted contract/evidence readiness"
+    not: "Raw E3/E4 evidence rows, prose notes, or GDScript assert() as authority for openmir2_verified claims"
+    adr: docs/architecture/adr-0016-openmir2-evidence-mapping-registry-and-provisional-contract-governance.md
+    reason: "Source-authentic downstream behavior/data claims require an Accepted readiness result with source tier, evidence level, conflict, version, and status checks."
+    referenced_by:
+      - docs/architecture/adr-0016-openmir2-evidence-mapping-registry-and-provisional-contract-governance.md
+    added: 2026-06-05
+    revised: ""
+
+  - purpose: openmir2_evidence_runtime_boundary
+    status: active
+    api: "Offline/tooling/bootstrap evidence governance only; runtime catalogs may carry copied Accepted evidence or contract references"
+    not: "Hot gameplay registry queries, Autoload evidence service, SceneTree-dependent evidence authority, or runtime networking implementation"
+    adr: docs/architecture/adr-0016-openmir2-evidence-mapping-registry-and-provisional-contract-governance.md
+    reason: "Evidence governance must validate source-authentic claims without becoming movement, combat, drop, pickup, inventory, equipment, save, or protocol runtime authority."
+    referenced_by:
+      - docs/architecture/adr-0016-openmir2-evidence-mapping-registry-and-provisional-contract-governance.md
+    added: 2026-06-05
+    revised: ""
+
+  - purpose: drop_table_runtime_catalog_authority
+    status: active
+    api: "Normalized immutable-by-contract DropTableRuntimeCatalog with deterministic roll request/result DTOs"
+    not: "Raw dictionaries, copied item definition rows, mutable Resources, UI tables, or global RNG as drop authority"
+    adr: docs/architecture/adr-0021-drop-table-runtime-data-validation-deterministic-roll-and-grant-candidate-handoff.md
+    reason: "Drop tables need deterministic reward policy while Item Definition remains template truth and pickup/ground/inventory own their own lifecycle domains."
+    referenced_by:
+      - docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+      - docs/architecture/adr-0021-drop-table-runtime-data-validation-deterministic-roll-and-grant-candidate-handoff.md
+    added: 2026-06-05
+    revised: "2026-06-05"
+
+  - purpose: ground_drop_lifecycle_authority
+    status: active
+    api: "GroundDropService lifecycle state machine with immutable-by-contract records and result DTOs"
+    not: "Scene nodes, Area2D bodies, labels, audio cues, or MapSpaceState item occupancy tables as ground drop lifecycle authority"
+    adr: docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+    reason: "Ground drops need visible lifecycle and claim state without stealing spatial occupancy, item template, or inventory authority."
+    referenced_by:
+      - docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - purpose: pickup_deterministic_commit_pipeline
+    status: active
+    api: "Staged pickup transaction model with inventory receive staging, MapSpaceState REMOVE_ITEM staging, and final PickupCommitResult"
+    not: "Signal-driven pickup grants, immediate inventory mutation before map removal readiness, presentation-first pickup success, or half-commit behavior"
+    adr: docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+    reason: "Pickup must not duplicate or delete rewards across ground lifecycle, spatial occupancy, and inventory storage boundaries."
+    referenced_by:
+      - docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - purpose: drop_rng_deterministic_stream
+    status: active
+    api: "Injected deterministic RNG stream/seed context captured in DropRollResult provenance"
+    not: "randomize(), global RNG authority, wall-clock seeds, frame delta, scene-tree order, or dictionary iteration order"
+    adr: docs/architecture/adr-0021-drop-table-runtime-data-validation-deterministic-roll-and-grant-candidate-handoff.md
+    reason: "Drop rolls and quantity outcomes must be reproducible in tests and not depend on engine lifecycle or global mutable random state."
+    referenced_by:
+      - docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+      - docs/architecture/adr-0021-drop-table-runtime-data-validation-deterministic-roll-and-grant-candidate-handoff.md
+    added: 2026-06-05
+    revised: "2026-06-05"
+
+  - purpose: project_owned_item_instance_identity
+    status: active
+    api: "Project-owned item_instance_id and inventory_entry_id values, persisted as strings when numeric range is unsafe"
+    not: "Object.get_instance_id(), NodePath, Resource path, scene node name, display name, localized text, icon path, RID, or Resource object identity"
+    adr: docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    reason: "Inventory, equipment, pickup, save/load, and debug references need stable durable identity independent of Godot object lifecycle or asset paths."
+    referenced_by:
+      - docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - purpose: inventory_equipment_candidate_commit_model
+    status: active
+    api: "Copied staged Inventory and Equipment candidate state plus synchronous final swaps coordinated with Character Attributes transaction result"
+    not: "Mutate-then-rollback, UI-driven state, signal-driven state, or observable partial Inventory/Equipment/Attribute commit"
+    adr: docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    reason: "Equipment changes must not expose mismatched inventory slots, equipped refs, and attribute sources to UI, combat, save/load, or growth feedback."
+    referenced_by:
+      - docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - purpose: equipment_source_key_canonicalization
+    status: active
+    api: "EquipmentService canonical source key fields: namespace, actor scope, slot_id, item_instance_id, item_id, definition_version, source_kind"
+    not: "UI slot labels, NodePaths, Resource paths, display strings, noncanonical concatenation, or ItemDefinition/UI-generated source keys"
+    adr: docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    reason: "Character Attributes duplicate detection and source replacement require deterministic equipment source identity derived from Equipment-owned semantic state."
+    referenced_by:
+      - docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - purpose: equipment_preview_default_pure_attribute_preview
+    status: active
+    api: "Equipment-resolved hypothetical modifier source submitted to Character Attributes pure AttributePreviewResult path"
+    not: "Committed source change, version increment, event emission, Inventory/Equipment mutation, or growth celebration"
+    adr: docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    reason: "Equipment UI needs formula-correct comparison without committing equipment or attribute state."
+    referenced_by:
+      - docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - purpose: logical_map_distance_service
+    status: active
+    api: "Scene-tree-independent RefCounted-friendly MapDistanceService deriving delta, Manhattan, Chebyshev, same-cell, orthogonal-neighbor, and diagonal-neighbor facts from Vector2i logical cells"
+    not: "Node2D/global positions, TileMapLayer coordinates, physics collisions, navigation paths, screen/world coordinates, or per-system local distance calculations as distance authority"
+    adr: docs/architecture/adr-0019-map-distance-and-movement-legality-contract.md
+    reason: "Movement, combat, pickup, spawn, AI, and QA tools need shared logical distance facts while retaining ownership of their own thresholds and legality rules."
+    referenced_by:
+      - docs/architecture/adr-0019-map-distance-and-movement-legality-contract.md
+    added: 2026-06-05
+    revised: ""
+
+  - purpose: movement_legality_service
+    status: active
+    api: "Read-only MovementLegalityService for single-step/request movement legality using logical Vector2i cells, static map facts, current MapSpaceState snapshots, and selected movement policy profile"
+    not: "Pathfinding, NavigationAgent2D authority, physics collision authority, animation timing, movement speed, direct occupancy mutation, or reservation conflict winner selection"
+    adr: docs/architecture/adr-0019-map-distance-and-movement-legality-contract.md
+    reason: "Movement needs a testable legality boundary without duplicating MapSpaceState authority or allowing Godot helper systems to decide gameplay movement."
+    referenced_by:
+      - docs/architecture/adr-0019-map-distance-and-movement-legality-contract.md
+    added: 2026-06-05
+    revised: ""
+
+  - purpose: map_source_conversion_boundary
+    status: active
+    api: "Offline/tooling MapConversionInput normalization plus candidate MapDefinition bake and structured reports"
+    not: "Runtime gameplay source parsing, direct OpenMir2/source fixture gameplay reads, conversion reports as gameplay authority, or visual TileMapLayer authority"
+    adr: docs/architecture/adr-0020-resource-map-conversion-pipeline-and-validation-boundary.md
+    reason: "Map sources need deterministic validation and provenance while ADR-0001 remains static gameplay facts authority."
+    referenced_by:
+      - docs/architecture/adr-0020-resource-map-conversion-pipeline-and-validation-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - purpose: optional_visual_map_output
+    status: active
+    api: "Optional TileMapLayer/scene output for visual/editor/QA presentation only"
+    not: "Visual output overriding MapDefinition static gameplay facts or becoming runtime map authority"
+    adr: docs/architecture/adr-0020-resource-map-conversion-pipeline-and-validation-boundary.md
+    reason: "Visual maps may aid inspection and temporary presentation, but gameplay facts remain MapDefinition-owned under ADR-0001."
+    referenced_by:
+      - docs/architecture/adr-0020-resource-map-conversion-pipeline-and-validation-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - purpose: godot_map_asset_writer_failure_policy
+    status: active
+    api: "ResourceSaver.save(), PackedScene.pack(), FileAccess.open(), FileAccess.store_* bool returns, and temp-file replacement results must be checked by map conversion writers"
+    not: "Unchecked ResourceSaver/FileAccess writes, silent partial generated assets, or runtime res:// authoritative asset generation"
+    adr: docs/architecture/adr-0020-resource-map-conversion-pipeline-and-validation-boundary.md
+    reason: "Generated map assets and reports must not appear valid after failed or partial writes under Godot 4.6.3."
+    referenced_by:
+      - docs/architecture/adr-0020-resource-map-conversion-pipeline-and-validation-boundary.md
+    added: 2026-06-05
+    revised: ""
 
 # Example:
 #
@@ -157,7 +1483,862 @@ api_decisions: []
 # Register a pattern when an ADR explicitly bans it AND other ADRs might
 # unknowingly use it (i.e., it's a tempting but wrong approach for this project).
 
-forbidden_patterns: []
+forbidden_patterns:
+
+  - pattern: click_movement_local_string_or_sentinel_authority
+    status: active
+    adr: docs/architecture/adr-0022-click-movement-runtime-intent-path-query-input-gate-command-result-contract.md
+    forbidden: "Click movement must not use local string path/input reasons, Dictionary-only DTOs, Vector2i.ZERO/previous-cell sentinels for missing logical cells, frame polling alone for movement intents, or direct singleton-only movement core logic."
+    required_instead: "Use ADR-0022 typed DTOs/enums, has_* fields, same-event UI gate results, injected/adapted dependencies, and MapSpaceState command results."
+    added: 2026-06-05
+    revised: ""
+  - pattern: visual_tile_data_as_gameplay_authority
+    status: active
+    description: "TileMapLayer, TileSet custom data, visual collision shapes, navigation shapes, sprites, and scene placement must not override MapDefinition gameplay facts."
+    why: "Gameplay passability, item placement, and static spatial facts need a single logical authority independent of visual iteration."
+    adr: docs/architecture/adr-0001-map-data-representation.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: per_cell_resource_or_node_map_storage
+    status: active
+    description: "MVP dense map cells must not be represented as one Resource or Node per logical cell."
+    why: "Per-cell objects add memory, scene-tree, loading, and query overhead that conflicts with dense grid O(1) lookup and unit-testable map data."
+    adr: docs/architecture/adr-0001-map-data-representation.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: normal_gameplay_full_map_scan
+    status: active
+    description: "Normal gameplay frame/update code must not scan the full map for ordinary spatial queries."
+    why: "The GDD requires bounded runtime behavior; full-map scans are allowed for load-time/offline validation, not ordinary gameplay query loops."
+    adr: docs/architecture/adr-0001-map-data-representation.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: local_spatial_reason_strings
+    status: active
+    description: "Downstream systems must not invent local string reason names for map-space query results."
+    why: "Spatial query semantics must remain canonical so movement, spawn, drop, pickup, combat, rendering, and QA/debug tools interpret failures consistently."
+    adr: docs/architecture/adr-0002-typed-query-result-schema.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: dictionary_only_spatial_query_payload
+    status: active
+    description: "Spatial query APIs must not expose only loose Dictionary payloads as their authoritative schema."
+    why: "Dictionary-only payloads weaken type safety, refactor safety, and reason coverage tests."
+    adr: docs/architecture/adr-0002-typed-query-result-schema.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: direct_map_space_state_mutation
+    status: active
+    description: "Actor nodes, controllers, AI, movement, spawn, drop, pickup, and combat systems must not directly mutate actor occupancy, item occupancy, or reservations outside MapSpaceState."
+    why: "Direct mutation bypasses deterministic command ordering and creates race-like authority bugs."
+    adr: docs/architecture/adr-0003-authoritative-occupancy-reservation-update-ordering.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: signal_callback_order_as_gameplay_authority
+    status: active
+    description: "Godot signal callback order must not decide movement reservation, occupancy, item placement, or pickup spatial state outcomes."
+    why: "Callback order is hidden and fragile; gameplay mutations must flow through the authoritative queue."
+    adr: docs/architecture/adr-0003-authoritative-occupancy-reservation-update-ordering.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: scene_tree_order_as_sort_authority
+    status: active
+    description: "Scene-tree insertion order, spawn callback order, or incidental child order must not decide deterministic Y-sort tie-breaks."
+    why: "Y-sort ties must be resolved by explicit anchor Y, type rank, and stable ID."
+    adr: docs/architecture/adr-0004-deterministic-y-sort-implementation.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: controller_local_coordinate_conversion
+    status: active
+    description: "Actor controllers, movement controllers, pickup logic, and target selection must not each implement private screen/world-to-logical conversion logic."
+    why: "Fragmented conversion creates inconsistent click movement, pickup, targeting, and debug behavior."
+    adr: docs/architecture/adr-0005-input-projection-coordinate-conversion.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: ui_consumed_input_world_projection
+    status: active
+    description: "Input events consumed by UI routing must not also be projected into world/logical map actions."
+    why: "Godot 4.6 separates mouse/touch and keyboard/gamepad focus; UI ownership must gate world projection to prevent accidental actions."
+    adr: docs/architecture/adr-0005-input-projection-coordinate-conversion.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: raw_string_stat_map_as_runtime_authority
+    status: active
+    description: "Character attribute runtime calculation, modifier aggregation, resource mutation, and consumer-facing query authority must not use raw string or StringName-only stat maps as authoritative state."
+    why: "Attribute hot paths and validation require compact typed StatId identity, deterministic coverage, and refactor-safe failure semantics."
+    adr: docs/architecture/adr-0006-attribute-data-representation-and-stat-id-typing.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: resource_as_mutable_attribute_runtime_state
+    status: active
+    description: "Godot Resource/.tres objects may author attribute config but must not become mutable authoritative runtime attribute state."
+    why: "Resources are reference objects that may be shared or cached; runtime attribute truth must be normalized/copied to avoid accidental cross-consumer mutation."
+    adr: docs/architecture/adr-0006-attribute-data-representation-and-stat-id-typing.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: enum_ordinal_as_durable_attribute_identity
+    status: active
+    description: "Character attribute save/config/debug durable data must not treat StatId enum ordinals as long-term truth without a versioned migration table."
+    why: "Enum reordering, deletion, or reuse can corrupt persisted attribute identity; external data must use stable semantic keys or explicit migration."
+    adr: docs/architecture/adr-0006-attribute-data-representation-and-stat-id-typing.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: unchecked_packed_attribute_integer_truncation
+    status: active
+    description: "Attribute runtime storage must not choose packed integer width without documented value ranges and overflow/truncation tests."
+    why: "PackedInt32Array can truncate values beyond its range; formulas must fail deterministically on technical-limit violations rather than wrapping silently."
+    adr: docs/architecture/adr-0006-attribute-data-representation-and-stat-id-typing.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: shared_mutable_attribute_dto_payload
+    status: active
+    description: "Attribute DTOs must not expose mutable arrays, dictionaries, or shared RefCounted payloads that allow consumers to mutate authoritative or staged state."
+    why: "RefCounted values use reference semantics; unchecked aliasing can bypass validation, transaction, and snapshot read-only boundaries."
+    adr: docs/architecture/adr-0006-attribute-data-representation-and-stat-id-typing.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: mutable_attribute_snapshot_exposure
+    status: active
+    description: "Attribute snapshots must not expose mutable runtime backing arrays, dictionaries, Resources, public vars, setters, mutator methods, or mutable nested objects to consumers."
+    why: "Snapshots are the cross-system read boundary; exposing mutable state lets consumers bypass attribute authority and corrupt previously published truth."
+    adr: docs/architecture/adr-0007-attribute-snapshot-query-api-shape-and-read-only-enforcement.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: snapshot_status_bypass
+    status: active
+    description: "Consumers must not obtain or use attribute snapshot references in a way that bypasses AttributeSnapshotQueryResult validity, stale, invalid, or display-only status semantics."
+    why: "Failed rebuild fallback and stale display values must not be consumed as current combat or save truth."
+    adr: docs/architecture/adr-0007-attribute-snapshot-query-api-shape-and-read-only-enforcement.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: snapshot_debug_trace_eager_payload
+    status: active
+    description: "Normal runtime attribute snapshots must not embed unbounded formatted debug traces or full source breakdown payloads by default."
+    why: "Debug trace must remain lazy, pull-based, or invalid/debug-only to avoid memory, allocation, and event payload bloat."
+    adr: docs/architecture/adr-0007-attribute-snapshot-query-api-shape-and-read-only-enforcement.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: dictionary_only_attribute_snapshot_payload
+    status: active
+    description: "Attribute snapshot/query APIs must not expose only loose Dictionary payloads as authoritative gameplay snapshot schema."
+    why: "Dictionary-only snapshots weaken read-only enforcement, type safety, stale-status propagation, and mutation-boundary tests."
+    adr: docs/architecture/adr-0007-attribute-snapshot-query-api-shape-and-read-only-enforcement.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: public_mutable_attribute_result_dto
+    status: active
+    description: "Attribute snapshot/query/result/row DTOs must not expose public mutable vars, setters, mutator methods, or mutable nested collection references."
+    why: "Query results are part of the read-only enforcement boundary; if result DTOs are mutable, consumers can bypass snapshot validity and status semantics."
+    adr: docs/architecture/adr-0007-attribute-snapshot-query-api-shape-and-read-only-enforcement.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: attribute_core_scene_tree_dependency
+    status: active
+    description: "Character Attributes core formula/update logic must not depend on Node lifecycle, SceneTree, NodePath, get_tree(), Autoload globals, scene signals, or _ready/_process callbacks."
+    why: "The core must be unit-testable and deterministic without scene tree or hidden global load-order dependencies."
+    adr: docs/architecture/adr-0008-attribute-event-signal-contract-and-scene-tree-independent-core.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: attribute_signal_callback_order_authority
+    status: active
+    description: "Godot signal callback order must not decide Character Attributes transaction status, source commit/rollback, snapshot/resource version publication, combat truth, save truth, or growth eligibility."
+    why: "Signals are downstream notification hints only; gameplay truth must already be decided by the scene-tree-independent core result."
+    adr: docs/architecture/adr-0008-attribute-event-signal-contract-and-scene-tree-independent-core.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: attribute_event_payload_as_full_state_authority
+    status: active
+    description: "Attribute event payloads must not become full authoritative state transfer, carry full old+new snapshots by default, or replace ADR-0007 snapshot/query APIs for current truth."
+    why: "Events are compact invalidation/update hints; using them as full state authority risks stale status bypass, payload bloat, and duplicated truth."
+    adr: docs/architecture/adr-0008-attribute-event-signal-contract-and-scene-tree-independent-core.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: attribute_preview_as_committed_event
+    status: active
+    description: "AttributePreviewResult must not appear in committed AttributeDomainEvent arrays, invoke event sinks/signals, increment authoritative versions, replace snapshots, or commit source changes."
+    why: "Preview is hypothetical UI/equipment comparison data; treating it as committed event data corrupts authority and stale-version semantics."
+    adr: docs/architecture/adr-0008-attribute-event-signal-contract-and-scene-tree-independent-core.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: mutable_attribute_event_result_dto
+    status: active
+    description: "AttributeUpdateResult and AttributeDomainEvent DTOs must not expose public mutable vars, setters, mutators, mutable Resource payloads, mutable Dictionary payloads, or mutable collection references."
+    why: "Event/result DTOs may be shared through sinks and signal adapters; mutable exposure lets one consumer affect another or bypass authoritative runtime state."
+    adr: docs/architecture/adr-0008-attribute-event-signal-contract-and-scene-tree-independent-core.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: autoload_attribute_event_bus_phase1
+    status: active
+    description: "Phase 1 Character Attributes must not introduce an Autoload global event bus as the event/signal authority."
+    why: "A global bus adds hidden coupling and is unnecessary for the offline Phase 1 slice; any later global routing must be a downstream adapter covered by a separate ADR."
+    adr: docs/architecture/adr-0008-attribute-event-signal-contract-and-scene-tree-independent-core.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: direct_attribute_source_set_mutation
+    status: active
+    description: "Equipment, progression, load, spawn, debug, UI, combat, and other external systems must not directly mutate committed Character Attributes source sets, base stats, modifiers, current resources, or version counters."
+    why: "Direct mutation bypasses actor-local transaction staging, validation, version checks, no-side-effect failure, and snapshot/event publication."
+    adr: docs/architecture/adr-0009-attribute-atomic-source-update-and-transaction-model.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: attribute_mutate_then_rollback_transaction
+    status: active
+    description: "Character Attributes structural updates must not mutate committed authoritative state first and then rely on manual rollback if validation, calculation, or snapshot/result materialization fails."
+    why: "GDScript reference semantics make rollback fragile; candidate construction plus final commit/swap is the accepted atomicity model."
+    adr: docs/architecture/adr-0009-attribute-atomic-source-update-and-transaction-model.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: attribute_reentrant_mutation
+    status: active
+    description: "Mutation requests submitted during Character Attributes transaction, result materialization, or result dispatch must not be accepted in Phase 1."
+    why: "Synchronous signal/event callback cascades can make callback order affect gameplay; Phase 1 rejects reentrant mutation until a scheduler ADR exists."
+    adr: docs/architecture/adr-0009-attribute-atomic-source-update-and-transaction-model.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: attribute_candidate_state_exposure
+    status: active
+    description: "Candidate staged source/current/snapshot/result state must not be visible through snapshot/query APIs, events, signals, debug tools, or consumer reads before final commit/swap."
+    why: "Consumers must see only last committed or newly committed read truth, never intermediate validation/calculation state."
+    adr: docs/architecture/adr-0009-attribute-atomic-source-update-and-transaction-model.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: attribute_resource_mutation_reaggregates_modifiers
+    status: active
+    description: "Current HP/MP mutations must not reaggregate structural modifiers or advance source_version."
+    why: "Resource-only changes are lightweight current-value transactions against the latest snapshot/effective max, not structural source rebuilds."
+    adr: docs/architecture/adr-0009-attribute-atomic-source-update-and-transaction-model.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: attribute_versionless_source_update
+    status: active
+    description: "Structural attribute source update requests must not omit required expected source/snapshot version policy for their request kind."
+    why: "Version expectations detect stale equipment, progression, save/load, debug, and UI commands deterministically before staging side effects."
+    adr: docs/architecture/adr-0009-attribute-atomic-source-update-and-transaction-model.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: attribute_debug_mutation_bypass
+    status: active
+    description: "Debug attribute mutations must not bypass the normal transaction, validation, version expectation, source labeling, result, and audit path."
+    why: "Debug-only changes can otherwise corrupt runtime truth or create impossible states that later systems treat as gameplay-valid."
+    adr: docs/architecture/adr-0009-attribute-atomic-source-update-and-transaction-model.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: derived_attribute_snapshot_as_save_truth
+    status: active
+    description: "Save payloads must not persist derived/effective AttributeSnapshot data, debug snapshot hashes, or comparison records as authoritative attribute truth."
+    why: "Persisted snapshots can become stale after formula, config, equipment, or registry changes; load must rebuild from authoritative inputs."
+    adr: docs/architecture/adr-0010-attribute-save-load-persistence-boundary-base-current-modifier-sources.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: attribute_core_file_io
+    status: active
+    description: "Character Attributes core load rebuild logic must not call FileAccess, ResourceLoader, slot-path APIs, get_tree(), Autoloads, scene signals, or file IO."
+    why: "File/container IO belongs to Save/Load orchestration; attribute rebuild must stay scene-tree-independent, injectable, unit-testable, and side-effect-free until commit."
+    adr: docs/architecture/adr-0010-attribute-save-load-persistence-boundary-base-current-modifier-sources.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: stat_id_ordinal_persistence
+    status: active
+    description: "Attribute save data must not persist StatId enum ordinals, dense vectors, or direct runtime storage indexes as durable stat/resource identity."
+    why: "Enum/order evolution can corrupt persisted values; durable identity must use semantic strings plus versioned migration."
+    adr: docs/architecture/adr-0010-attribute-save-load-persistence-boundary-base-current-modifier-sources.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: attribute_load_silent_repair
+    status: active
+    description: "Attribute load must not silently drop missing sources, clamp current resources, ignore unknown required keys, or repair incompatible versions without explicit versioned migration/recovery policy."
+    why: "Silent repair hides data corruption, can erase player progress, and can present invalid persisted state as normal gameplay truth."
+    adr: docs/architecture/adr-0010-attribute-save-load-persistence-boundary-base-current-modifier-sources.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: resource_object_attribute_save_truth
+    status: active
+    description: "Godot Resource/.tres instances, loaded Resource references, or duplicated Resource graphs must not be authoritative Character Attributes save truth."
+    why: "Resources may be shared, cached, and mutable; persistence must normalize to primitive semantic DTO data before attribute rebuild."
+    adr: docs/architecture/adr-0010-attribute-save-load-persistence-boundary-base-current-modifier-sources.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: variant_object_graph_attribute_save_truth
+    status: active
+    description: "FileAccess.store_var/get_var object graphs, full_objects, RefCounted object identity, or embedded engine Objects must not be authoritative attribute save payloads."
+    why: "Engine object serialization creates fragile migration, aliasing, trust-boundary, and Resource mutation risks; attribute save truth must be explicit primitive DTO schema."
+    adr: docs/architecture/adr-0010-attribute-save-load-persistence-boundary-base-current-modifier-sources.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: load_hash_bypass_rebuild
+    status: active
+    description: "Debug snapshot hashes or comparison records must not skip load validation, migration, source normalization, current-resource validation, or candidate rebuild."
+    why: "Hashes are drift evidence only; they cannot prove runtime authority remains valid across schema, formula, config, or content changes."
+    adr: docs/architecture/adr-0010-attribute-save-load-persistence-boundary-base-current-modifier-sources.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: save_write_success_conflated_with_attribute_acceptance
+    status: active
+    description: "Save/Load must not treat Character Attributes load acceptance, signal delivery, or unchecked FileAccess calls as proof that a save slot was successfully written."
+    why: "File/container IO can fail independently from attribute semantic validation; both result domains must be handled explicitly."
+    adr: docs/architecture/adr-0010-attribute-save-load-persistence-boundary-base-current-modifier-sources.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: hardcoded_attribute_gameplay_values
+    status: active
+    description: "Character Attributes formula/runtime code must not hardcode provisional or OpenMir2-authentic gameplay values such as stat bounds, base stats, combat power weights, monster templates, or equipment modifier values."
+    why: "Gameplay values must come from centralized fixture/config sources with source_status, versions, and validation so balance, save/load migration, and QA evidence remain traceable."
+    adr: docs/architecture/adr-0011-attribute-fixture-config-loading-strategy-mvp-provisional-values.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: mutable_resource_attribute_config_authority
+    status: active
+    description: "Loaded .tres Resources, ResourceLoader cache entries, or mutable Resource graphs must not be runtime Character Attributes config authority."
+    why: "Resources can be shared/cached and mutable; config inputs must be normalized into immutable-by-contract DTO/table data before gameplay use."
+    adr: docs/architecture/adr-0011-attribute-fixture-config-loading-strategy-mvp-provisional-values.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: loose_dictionary_attribute_config_authority
+    status: active
+    description: "Raw JSON, Dictionary, Variant graphs, or Dictionary-only fixture maps must not be authoritative Character Attributes runtime config schema."
+    why: "Loose containers are mutable, weakly typed, iteration-order sensitive, and unsafe after external decode; config must be typed and validated before use."
+    adr: docs/architecture/adr-0011-attribute-fixture-config-loading-strategy-mvp-provisional-values.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: attribute_config_hot_path_reload
+    status: active
+    description: "Character Attributes formula/runtime hot paths must not reload or re-normalize full config through FileAccess, ResourceLoader, JSON parse, or live config scans."
+    why: "Config normalization belongs to bootstrap/test setup or explicit update flows; gameplay rebuilds should use validated injected tables and preserve O(M + S) behavior."
+    adr: docs/architecture/adr-0011-attribute-fixture-config-loading-strategy-mvp-provisional-values.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: provisional_value_without_source_status
+    status: active
+    description: "MVP provisional attribute fixture/config values must not omit source_status or evidence-status labels."
+    why: "The project must distinguish provisional, evidence-pending, and verified values so players, tests, and future OpenMir2 mapping work do not treat placeholders as authentic truth."
+    adr: docs/architecture/adr-0011-attribute-fixture-config-loading-strategy-mvp-provisional-values.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: openmir2_verified_without_evidence
+    status: active
+    description: "Attribute config values must not use openmir2_verified or equivalent source-authentic labels without evidence ID/source reference."
+    why: "Authenticity claims need traceable evidence; otherwise provisional values can become false canonical behavior."
+    adr: docs/architecture/adr-0011-attribute-fixture-config-loading-strategy-mvp-provisional-values.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: attribute_config_live_reload_bypassing_transaction
+    status: active
+    description: "Future Character Attributes config reload/change mechanisms must not bypass validation, versioning, transaction/update result semantics, or snapshot publication rules."
+    why: "Live reload can otherwise change gameplay truth without deterministic failure handling, version advancement, or consumer invalidation."
+    adr: docs/architecture/adr-0011-attribute-fixture-config-loading-strategy-mvp-provisional-values.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: scene_tree_dependent_attribute_blocking_tests
+    status: active
+    description: "Character Attributes blocking formula/contract unit tests must not require gameplay scenes, Node lifecycle, SceneTree APIs, Autoloads, UI/Control state, timers, frames, or signal processing as their test oracle."
+    why: "Scene/runtime dependencies can mask formula, validation, transaction, snapshot, and result-contract defects that must be proven in the injectable core."
+    adr: docs/architecture/adr-0012-attribute-formula-only-gut-test-strategy-without-scene-tree-ui-autoload.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: filesystem_resource_attribute_formula_fixtures
+    status: active
+    description: "Character Attributes blocking formula/contract tests must not depend on ResourceLoader, FileAccess, real .tres files, real .tscn files, save slot paths, or filesystem fixtures as authoritative setup."
+    why: "Blocking formula evidence must exercise primitive payloads, factories, normalizers, and injected DTO/config tables without file/import/cache behavior obscuring core failures."
+    adr: docs/architecture/adr-0012-attribute-formula-only-gut-test-strategy-without-scene-tree-ui-autoload.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: attribute_integration_evidence_substitutes_formula_tests
+    status: active
+    description: "Integration tests, UI screenshots, manual walkthroughs, scene smoke tests, Save/Load IO tests, playtests, or downstream system evidence must not replace required Character Attributes formula/contract GUT unit tests."
+    why: "Downstream evidence proves wiring and presentation, but cannot prove core formula results, structured failures, no-side-effect transactions, immutable-by-contract DTOs, or deterministic failure ordering."
+    adr: docs/architecture/adr-0012-attribute-formula-only-gut-test-strategy-without-scene-tree-ui-autoload.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: signal_order_attribute_test_oracle
+    status: active
+    description: "Character Attributes blocking tests must not assert formula/update correctness through Godot signal callback order, listener order, deferred call order, timer order, or frame ordering."
+    why: "ADR-0008 and ADR-0009 make returned result DTOs and committed state the authority; callback order is downstream notification behavior and must not decide gameplay truth."
+    adr: docs/architecture/adr-0012-attribute-formula-only-gut-test-strategy-without-scene-tree-ui-autoload.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: mutable_resource_graph_attribute_runtime_authority
+    status: active
+    description: "Loaded .tres Resources, duplicated Resource graphs, nested Resources, subresources, exported Resource containers, or ResourceLoader cache entries must not become Character Attributes runtime config, snapshot, transaction, save, or formula authority."
+    why: "Godot Resources are mutable reference objects and may be shared/cached; runtime authority must be normalized into project-owned DTO/table data."
+    adr: docs/architecture/adr-0013-attribute-godot-resource-duplication-shared-reference-policy-if-tres-resources-are-used.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: resource_duplicate_as_deep_isolation
+    status: active
+    description: "Character Attributes must not treat Resource.duplicate() or a duplicated Resource graph as sufficient nested isolation for config, fixtures, snapshots, save truth, or runtime authority."
+    why: "Shallow duplication does not reliably isolate nested Resources/containers, and even duplicate_deep() test evidence does not make Resource graphs acceptable runtime authority."
+    adr: docs/architecture/adr-0013-attribute-godot-resource-duplication-shared-reference-policy-if-tres-resources-are-used.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: resource_loader_cache_attribute_authority
+    status: active
+    description: "Character Attributes gameplay correctness must not depend on ResourceLoader cache mode, repeated-load object identity, Resource path identity, or live mutation of loaded Resource instances."
+    why: "ResourceLoader behavior is a bootstrap/import concern; gameplay truth must come from validated normalized DTO/table data independent of cache/shared-reference behavior."
+    adr: docs/architecture/adr-0013-attribute-godot-resource-duplication-shared-reference-policy-if-tres-resources-are-used.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: resource_backed_formula_unit_fixtures
+    status: active
+    description: "Character Attributes blocking formula/contract unit tests must not use .tres Resources, ResourceLoader, FileAccess, or Resource-backed fixture graphs as authoritative setup."
+    why: "Formula evidence must prove core DTO/table behavior directly; Resource importer/bootstrap tests are supplemental and cannot substitute for ADR-0012 formula tests."
+    adr: docs/architecture/adr-0013-attribute-godot-resource-duplication-shared-reference-policy-if-tres-resources-are-used.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: resource_reflection_as_attribute_schema
+    status: active
+    description: "Attribute .tres importers must not treat arbitrary exported Resource properties, broad get_property_list() reflection output, editor metadata, inherited Resource properties, or Resource property order as the authoritative config schema."
+    why: "Resource import must be explicit, versioned, schema-driven, and deterministic so unsupported Object/Resource payloads and engine/editor ordering do not bypass ADR-0011 validation."
+    adr: docs/architecture/adr-0013-attribute-godot-resource-duplication-shared-reference-policy-if-tres-resources-are-used.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: combat_power_as_damage_authority
+    status: active
+    description: "Combat, AI, damage, hit, crit, DPS, TTK, or target-selection logic must not use Character Attributes combat_power or display proxy DTOs as gameplay authority."
+    why: "Combat power is an MVP provisional display-only growth aid; combat truth belongs to combat-specific formulas and validated attribute snapshots."
+    adr: docs/architecture/adr-0014-attribute-combat-power-main-stat-display-proxy-ownership.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: ui_recomputed_attribute_display_formula
+    status: active
+    description: "HUD, equipment UI, growth feedback, or presentation code must not recompute Character Attributes combat_power, effective stats, primary comparison stat, or visible delta formulas from raw snapshots/modifiers."
+    why: "UI should present semantic DTOs from Character Attributes; duplicating formulas in UI risks stale/invalid celebration, version drift, and inconsistent config/source-status handling."
+    adr: docs/architecture/adr-0014-attribute-combat-power-main-stat-display-proxy-ownership.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: stale_invalid_growth_celebration
+    status: active
+    description: "UI, growth feedback, equipment presentation, audio, VFX, or animation must not celebrate stale, invalid, unavailable, preview-only, or failed-rebuild display proxy data as normal player growth."
+    why: "Invalid or stale attribute state is player-safe unavailable/debug information, not proof of successful growth."
+    adr: docs/architecture/adr-0014-attribute-combat-power-main-stat-display-proxy-ownership.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: equipment_ui_direct_attribute_formula_access
+    status: active
+    description: "Equipment UI and equipment presentation must not directly aggregate modifiers, call low-level attribute formulas, or infer missing before/after display proxy values outside approved preview/update/query DTOs."
+    why: "Equipment owns legality and modifier resolution, while Character Attributes owns formula-tested attribute-derived display proxy computation."
+    adr: docs/architecture/adr-0014-attribute-combat-power-main-stat-display-proxy-ownership.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: display_proxy_as_item_legality_or_value_authority
+    status: active
+    description: "Combat power, primary comparison stat, growth salience, or visible delta rows must not decide equip legality, item worth, sell value, rarity, drop value, or build optimization authority."
+    why: "Display proxy data is a provisional presentation aid; item legality and value belong to Equipment, Item Definition, Economy, and UI systems."
+    adr: docs/architecture/adr-0014-attribute-combat-power-main-stat-display-proxy-ownership.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: raw_item_dictionary_as_definition_authority
+    status: active
+    description: "Drops, inventory, equipment, UI, economy, save/load, and QA/debug tools must not treat raw dictionaries, JSON rows, Variant maps, or locally constructed item payloads as authoritative item definition truth."
+    why: "Item templates need schema validation, lifecycle/source/evidence labels, deterministic indexes, and typed query/status semantics before gameplay consumption."
+    adr: docs/architecture/adr-0015-item-definition-runtime-data-validation-query-and-versioning.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: display_name_or_resource_path_item_identity
+    status: active
+    description: "Item saves, drop tables, equipment references, inventory stacks, and UI bindings must not use localized display names, Resource paths, scene node names, icon paths, or runtime dense indexes as durable item identity."
+    why: "Durable item identity must survive localization, asset moves, scene changes, and catalog reindexing through stable semantic item_id keys plus migration metadata."
+    adr: docs/architecture/adr-0015-item-definition-runtime-data-validation-query-and-versioning.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: consumer_fabricated_missing_item_fallback
+    status: active
+    description: "Consumers must not silently fabricate generic item definitions, clamp missing fields, invent stack/equipment behavior, or display deprecated/invalid/provisional items as normal verified runtime items."
+    why: "Missing, invalid, deprecated, disabled, and provisional item references need explicit status-bearing results so saves, drops, UI, and QA can handle data problems deterministically."
+    adr: docs/architecture/adr-0015-item-definition-runtime-data-validation-query-and-versioning.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: mutable_item_definition_runtime_row_exposure
+    status: active
+    description: "Item Definition query/projection APIs must not expose mutable runtime catalog rows, mutable arrays/dictionaries, mutable Resources, public mutable vars, setters, mutator methods, or shared nested objects to consumers."
+    why: "Catalog rows are shared cross-system template truth; mutable exposure lets one consumer corrupt drops, inventory, equipment, UI, save/load, economy, or QA behavior."
+    adr: docs/architecture/adr-0015-item-definition-runtime-data-validation-query-and-versioning.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: item_definition_resource_graph_runtime_authority
+    status: active
+    description: "Loaded .tres Resources, ResourceLoader cache entries, duplicated Resource graphs, scene item Nodes, or visual prefabs must not become Item Definition runtime catalog authority."
+    why: "Resources and scene objects are mutable/reference-based presentation or authoring artifacts; runtime item template truth must be normalized into project-owned DTO/table data."
+    adr: docs/architecture/adr-0015-item-definition-runtime-data-validation-query-and-versioning.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: item_definition_validation_bypass_for_runtime_spawn
+    status: active
+    description: "Runtime item spawn, drop, inventory grant, equipment preview, save migration, or debug creation must not bypass ItemDefinitionRuntimeCatalog reference resolution and validation/status checks."
+    why: "Unvalidated references can create impossible item instances, corrupt saves, or present disabled/deprecated/provisional content as normal gameplay truth."
+    adr: docs/architecture/adr-0015-item-definition-runtime-data-validation-query-and-versioning.md
+    added: 2026-06-04
+    revised: ""
+
+  - pattern: minimal_mir_client_as_behavior_authority
+    status: active
+    description: "MinimalMirClient, client observation, or visual behavior matching must not authorize OpenMir2 server/gameplay behavior rules."
+    why: "The project treats OpenMir2 source as Tier 1; client observations may validate symptoms or locate source only."
+    adr: docs/architecture/adr-0016-openmir2-evidence-mapping-registry-and-provisional-contract-governance.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: openmir2_contract_without_e3_source
+    status: active
+    description: "Required Phase 1 OpenMir2-derived contracts must not be accepted below E3 evidence or without Tier 1 source basis."
+    why: "Movement, combat, death, drop, pickup, inventory, equipment, and protocol-entry behavior must not become source-authentic from guesses or weak evidence."
+    adr: docs/architecture/adr-0016-openmir2-evidence-mapping-registry-and-provisional-contract-governance.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: runtime_openmir2_evidence_registry_authority
+    status: active
+    description: "Hot gameplay systems must not query the OpenMir2 evidence registry to decide movement, combat, drops, pickup, inventory, equipment, save, or protocol behavior."
+    why: "The registry is offline/tooling/bootstrap governance; runtime truth belongs to accepted system ADRs and validated runtime catalogs."
+    adr: docs/architecture/adr-0016-openmir2-evidence-mapping-registry-and-provisional-contract-governance.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: yaml_parser_dependency_without_approval
+    status: active
+    description: "Godot-native evidence tooling must not introduce YAML parser dependencies without explicit dependency approval."
+    why: "Godot 4.6.3 has no project-approved YAML parser; evidence tooling should use approved built-in-readable formats or external-only YAML."
+    adr: docs/architecture/adr-0016-openmir2-evidence-mapping-registry-and-provisional-contract-governance.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: gdscript_assert_as_contract_gate
+    status: active
+    description: "OpenMir2 contract readiness validation must not rely on GDScript assert() as the governance gate."
+    why: "Readiness must produce deterministic structured failures visible to review, QA, and CI; assert() is only an optional developer aid."
+    adr: docs/architecture/adr-0016-openmir2-evidence-mapping-registry-and-provisional-contract-governance.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: unchecked_fileaccess_registry_write
+    status: active
+    description: "Godot FileAccess registry/report reads and writes must not ignore open failures or Godot 4.4+ store_* boolean returns."
+    why: "Silent read/write failure can produce partial evidence reports or falsely passing readiness gates."
+    adr: docs/architecture/adr-0016-openmir2-evidence-mapping-registry-and-provisional-contract-governance.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: raw_evidence_record_as_openmir2_verified_claim
+    status: active
+    description: "A raw E3/E4 evidence record alone must not authorize openmir2_verified gameplay/data claims."
+    why: "Downstream authenticity claims require an Accepted evidence or contract readiness result with conflict, version, decision, and field-completeness checks."
+    adr: docs/architecture/adr-0016-openmir2-evidence-mapping-registry-and-provisional-contract-governance.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: unversioned_openmir2_contract_reference
+    status: active
+    description: "Downstream ADRs, GDDs, stories, and runtime catalogs must not cite mutable or unversioned OpenMir2 contracts when claiming source-authentic behavior."
+    why: "Contract IDs and versions are required so later supersession or divergence can be audited without breaking traceability."
+    adr: docs/architecture/adr-0016-openmir2-evidence-mapping-registry-and-provisional-contract-governance.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: drop_table_copies_item_definition_truth
+    status: active
+    description: "Drop tables must not copy item display, quality, stack, equipment, modifier, or template metadata as authoritative truth."
+    why: "ItemDefinitionRuntimeCatalog owns item template truth; drop tables should store item references and roll policy only."
+    adr: docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+    added: 2026-06-05
+    revised: "2026-06-05"
+
+  - pattern: drop_table_silent_invalid_row_filtering
+    status: active
+    description: "Normal gameplay drop tables must not silently skip invalid enabled rows and roll remaining rows."
+    why: "Skipping invalid rows changes authored probabilities without authoring awareness; invalid normal tables fail whole-table validation."
+    adr: docs/architecture/adr-0021-drop-table-runtime-data-validation-deterministic-roll-and-grant-candidate-handoff.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: drop_table_direct_ground_inventory_mutation
+    status: active
+    description: "Drop Table must not create ground drops, mutate MapSpaceState item occupancy, grant inventory entries, equip items, or play presentation feedback."
+    why: "ADR-0017 assigns ground lifecycle, pickup, inventory, equipment, and presentation to separate owners; Drop Table emits grant candidates only."
+    adr: docs/architecture/adr-0021-drop-table-runtime-data-validation-deterministic-roll-and-grant-candidate-handoff.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: drop_table_probability_changed_by_inventory_state
+    status: active
+    description: "Inventory capacity, pickup failure, or ground placement failure must not alter Drop Table probabilities, reroll outcomes, or retroactively change roll results."
+    why: "Drop Table is stateless reward policy; downstream lifecycle failures are handled by GroundDrop/Pickup/Inventory without corrupting roll provenance."
+    adr: docs/architecture/adr-0021-drop-table-runtime-data-validation-deterministic-roll-and-grant-candidate-handoff.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: ground_drop_direct_map_occupancy_mutation
+    status: active
+    description: "GroundDropService and PickupService must not directly mutate MapSpaceState item occupancy outside PLACE_ITEM / REMOVE_ITEM commands."
+    why: "MapSpaceState is the spatial item occupancy authority; direct mutation creates double authority and stale ground/drop state."
+    adr: docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: pickup_half_commit
+    status: active
+    description: "Pickup must not leave inventory granted while ground drop remains available, or remove ground drop while inventory grant failed."
+    why: "The pickup transaction spans ground lifecycle, map occupancy, and inventory receive; partial commit duplicates or deletes rewards."
+    adr: docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: pickup_signal_or_presentation_as_commit_authority
+    status: active
+    description: "Signals, audio, VFX, UI, scene nodes, and Area2D/physics callbacks must not decide or imply pickup success before final PickupCommitResult.PICKED_UP."
+    why: "Presentation may react to committed results only; callback or visual order must not become gameplay authority."
+    adr: docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: global_random_or_wall_clock_drop_roll
+    status: active
+    description: "Drop rolls, quantity rolls, and pickup claim ordering must not use randomize(), global RNG state, wall-clock time, frame delta, scene-tree order, or dictionary iteration order."
+    why: "Reward outcomes and pickup races must be deterministic, replayable, and unit-testable."
+    adr: docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: ground_drop_as_inventory_storage_authority
+    status: active
+    description: "Ground drops must not own final inventory slots, stacks, equipped references, item instance truth, or save truth."
+    why: "Ground drops are world lifecycle records and grant intents; final storage belongs to Inventory/Equipment/Save boundaries."
+    adr: docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: openmir2_drop_claim_without_readiness
+    status: active
+    description: "Drop table, drop creation, ground item, pickup, despawn, ownership, range, or quantity behavior must not claim OpenMir2 authenticity without ADR-0016 Accepted readiness."
+    why: "Until evidence governance accepts the relevant contract, concrete drop/pickup behavior is provisional or evidence-pending."
+    adr: docs/architecture/adr-0017-drop-table-ground-drop-and-pickup-lifecycle-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: object_instance_id_as_item_identity
+    status: active
+    description: "Inventory, equipment, pickup, save/load, and debug systems must not use Object.get_instance_id(), RID, or engine object identity as item instance identity."
+    why: "Godot object identity is runtime-local and lifecycle-dependent; item identity must be project-owned and persistence-safe."
+    adr: docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: nodepath_or_resource_path_item_identity
+    status: active
+    description: "NodePath, Resource path, scene node name, icon path, display name, or localized text must not be durable item instance or equipment identity."
+    why: "Assets, scenes, localization, and presentation can change independently from gameplay identity."
+    adr: docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: inventory_copies_item_definition_truth
+    status: active
+    description: "Inventory records must not store copied item display, quality, stack policy, equipment payload, modifier rows, or template fields as authoritative truth."
+    why: "ItemDefinitionRuntimeCatalog owns template truth; inventory stores references and instance/container state."
+    adr: docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: equipment_direct_attribute_source_mutation
+    status: active
+    description: "Equipment must not directly mutate Character Attributes committed source sets, version counters, snapshots, or display proxy state."
+    why: "Equipment-derived modifiers must enter Character Attributes through AttributeTransactionRequest so validation, version checks, and no-side-effect rejection apply."
+    adr: docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: observable_equip_partial_commit
+    status: active
+    description: "Consumers must not observe Attributes committed to new equipment while Inventory/Equipment still publish old state, or Equipment slots changed while Attributes still publish old sources without stale/failure status."
+    why: "Equip replacement must publish coherent cross-domain state to avoid UI, combat, save, and growth feedback inconsistencies."
+    adr: docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: equipment_source_key_noncanonical
+    status: active
+    description: "Equipment-derived Attribute source keys must not be ad hoc strings, UI labels, Resource paths, display names, or caller-generated noncanonical payloads."
+    why: "Character Attributes duplicate detection and replacement require EquipmentService canonicalization."
+    adr: docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: ui_drag_drop_as_inventory_or_equipment_authority
+    status: active
+    description: "UI drag/drop, Control focus, scene node visibility, signals, or visual item nodes must not decide inventory/equipment truth."
+    why: "UI submits requests and presents results; InventoryService and EquipmentService own gameplay state and transactions."
+    adr: docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: autoload_inventory_equipment_authority_phase1
+    status: active
+    description: "Phase 1 Inventory/Equipment authority must not be hidden in an Autoload/global singleton unless a later ADR explicitly approves it."
+    why: "Core inventory/equipment rules must remain injectable and unit-testable without scene-tree/global lifecycle coupling."
+    adr: docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: equipment_preview_as_committed_growth
+    status: active
+    description: "Equipment preview-only comparison must not trigger committed growth feedback, Attribute source commits, authoritative version increments, or committed events."
+    why: "Preview is hypothetical; growth celebration requires committed Attribute update and coherent Inventory/Equipment state."
+    adr: docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: equipment_derived_attribute_source_save_truth_conflict
+    status: active
+    description: "Save/load must not treat both Equipment slot truth and separately persisted equipment-derived Attribute sources as independent authoritative truths without explicit conflict resolution."
+    why: "Equipment-derived Attribute sources should rebuild from Equipment + ItemDefinition in Phase 1; duplicated save truth creates conflict on load."
+    adr: docs/architecture/adr-0018-inventory-and-equipment-instance-modifier-transaction-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: non_logical_distance_authority
+    status: active
+    description: "Gameplay distance and adjacency decisions must not use Node2D/global position, sprite position, TileMapLayer coordinates, physics collision, navigation output, or screen/world coordinates as authority."
+    why: "Distance facts must be derived from canonical logical Vector2i cells so movement, combat, pickup, spawn, and AI remain consistent."
+    adr: docs/architecture/adr-0019-map-distance-and-movement-legality-contract.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: system_local_distance_metric_authority
+    status: active
+    description: "Combat, pickup, spawn, AI, movement, and debug systems must not each define private distance metric semantics for shared map-cell facts."
+    why: "Private local metrics create cross-system inconsistencies; systems may own thresholds but must consume canonical distance facts."
+    adr: docs/architecture/adr-0019-map-distance-and-movement-legality-contract.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: godot_navigation_or_physics_as_movement_authority
+    status: active
+    description: "NavigationAgent2D, NavigationServer2D, NavigationRegion2D, navmesh/polygons, avoidance velocity, CharacterBody2D collisions, Area2D, physics callbacks, and TileMapLayer navigation/collision/custom data must not decide authoritative movement legality."
+    why: "Godot helpers may suggest or present movement, but legal movement must be revalidated through logical cells, MovementLegalityService, and MapSpaceState reservation/commit."
+    adr: docs/architecture/adr-0019-map-distance-and-movement-legality-contract.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: movement_legality_direct_mapspace_mutation
+    status: active
+    description: "MovementLegalityService must not create, commit, cancel, sort, or resolve reservations or mutate actor/item occupancy directly."
+    why: "Movement legality is a read-only decision boundary; ADR-0003 MapSpaceState owns authoritative mutation and deterministic conflict resolution."
+    adr: docs/architecture/adr-0019-map-distance-and-movement-legality-contract.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: diagonal_or_corner_cutting_without_evidence
+    status: active
+    description: "Movement, pathfinding, combat, pickup, spawn, or AI systems must not treat diagonal movement, corner-cutting, or Chebyshev adjacency as OpenMir2-verified or default-authoritative without accepted evidence-backed policy."
+    why: "Phase 1 diagonal and corner-cutting semantics are unresolved; provisional defaults must fail closed rather than become false source-authentic behavior."
+    adr: docs/architecture/adr-0019-map-distance-and-movement-legality-contract.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: map_conversion_pipeline_as_runtime_authority
+    status: active
+    description: "Runtime gameplay systems must not parse source map envelopes, query conversion reports, or run conversion pipeline logic to decide movement, pickup, combat, spawn, Y-sort, or map facts."
+    why: "Conversion is tooling/bootstrap; runtime truth comes from baked MapDefinition and ADR-owned runtime services."
+    adr: docs/architecture/adr-0020-resource-map-conversion-pipeline-and-validation-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: visual_map_output_overrides_mapdefinition
+    status: active
+    description: "Generated TileMapLayer/scene output, TileSet custom data, collision/navigation shapes, scene tiles, visual matching reports, and visual draw order must not override MapDefinition gameplay facts."
+    why: "ADR-0001 keeps static gameplay facts independent of visual presentation."
+    adr: docs/architecture/adr-0020-resource-map-conversion-pipeline-and-validation-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: unverified_source_map_semantics
+    status: active
+    description: "OpenMir2/source-derived map, cell, coordinate, blocking, occlusion, or visual matching claims must not be labeled source-authentic without ADR-0016 readiness-passing evidence/contract references."
+    why: "Visual matching or decoded data alone cannot authorize gameplay semantics."
+    adr: docs/architecture/adr-0020-resource-map-conversion-pipeline-and-validation-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: unchecked_map_asset_writer_failure
+    status: active
+    description: "Map conversion writers must not ignore ResourceSaver.save(), PackedScene.pack(), FileAccess.open(), FileAccess.store_* bool returns, temp write, or replace failures."
+    why: "A partial or failed generated map asset/report must not appear valid to implementation stories, CI, editor tooling, or runtime bootstrap validation."
+    adr: docs/architecture/adr-0020-resource-map-conversion-pipeline-and-validation-boundary.md
+    added: 2026-06-05
+    revised: ""
+
+  - pattern: editor_tooling_state_as_conversion_truth
+    status: active
+    description: "Editor selection state, @tool lifecycle, _ready() order, scene-tree insertion order, NodePath identity, ResourceLoader cache identity, Resource property order, or filesystem traversal order must not determine conversion output truth."
+    why: "Conversion output must be deterministic and headless-testable; editor/tool wrappers are adapters only."
+    adr: docs/architecture/adr-0020-resource-map-conversion-pipeline-and-validation-boundary.md
+    added: 2026-06-05
+    revised: ""
 
 # Example:
 #

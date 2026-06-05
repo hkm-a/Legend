@@ -37,7 +37,7 @@
 #   Each entry: name, status, source, referenced_by[], attributes{}, added, revised
 
 version: 1
-last_updated: "2026-06-03"
+last_updated: "2026-06-05"
 
 # ─── ENTITIES ────────────────────────────────────────────────────────────────
 # Named game-world objects: enemies, NPCs, characters, factions, bosses.
@@ -77,7 +77,61 @@ entities: []
 # Attribute fields: value_gold, weight, stackable, category, and any stat
 #   modifiers that another system (e.g., economy, crafting) might reference.
 
-items: []
+items:
+  - name: mvp_small_material_shard
+    status: active
+    source: design/gdd/item-definition-system.md
+    referenced_by:
+      - design/gdd/item-definition-system.md
+      - design/gdd/drop-table-system.md
+    category: material
+    stackable: true
+    source_status: mvp_provisional
+    notes: "MVP provisional material fixture for validating drop table, pickup, inventory, and future economy flows; final Item Definition catalog row still required before implementation."
+    added: 2026-06-05
+    revised: ""
+
+  - name: mvp_bronze_sword
+    status: active
+    source: design/gdd/item-definition-system.md
+    referenced_by:
+      - design/gdd/item-definition-system.md
+      - design/gdd/drop-table-system.md
+    category: equipment
+    stackable: false
+    equipment_role: common_baseline
+    source_status: mvp_provisional
+    notes: "MVP provisional common equipment fixture for validating drop table, pickup, inventory, equipment comparison, and attribute modifier handoff."
+    added: 2026-06-05
+    revised: ""
+
+  - name: mvp_iron_sword
+    status: active
+    source: design/gdd/item-definition-system.md
+    referenced_by:
+      - design/gdd/item-definition-system.md
+      - design/gdd/drop-table-system.md
+    category: equipment
+    stackable: false
+    equipment_role: clear_upgrade
+    source_status: mvp_provisional
+    notes: "MVP provisional upgrade equipment fixture for validating positive growth and equipment-or-better drop cadence."
+    added: 2026-06-05
+    revised: ""
+
+  - name: mvp_showcase_blade
+    status: active
+    source: design/gdd/item-definition-system.md
+    referenced_by:
+      - design/gdd/item-definition-system.md
+      - design/gdd/drop-table-system.md
+    category: equipment
+    stackable: false
+    equipment_role: rare_showcase
+    source_status: mvp_provisional
+    notes: "MVP provisional rare/showcase equipment fixture for loot salience QA through deterministic seeds or debug fixtures, not raw chance."
+    added: 2026-06-05
+    revised: ""
 
 # Example:
 #
@@ -166,6 +220,508 @@ formulas:
     notes: "Returns 1 when a behavior domain must pause downstream GDD citation and return to source verification."
     added: 2026-06-03
     revised: ""
+
+  - name: in_bounds
+    status: active
+    source: design/gdd/map-coordinate-blocking-y-sort-system.md
+    referenced_by:
+      - design/gdd/map-coordinate-blocking-y-sort-system.md
+      - design/gdd/click-movement-system.md
+    variables:
+      - map_loaded
+      - map_width
+      - map_height
+      - cell_data_matches_dimensions
+      - cell_x
+      - cell_y
+    output_range: [false, true]
+    expression: "map_loaded AND map_width > 0 AND map_height > 0 AND cell_data_matches_dimensions AND (0 <= cell_x < map_width) AND (0 <= cell_y < map_height)"
+    notes: "Determines whether a queried logical grid coordinate exists inside trusted gameplay map bounds; if bounds are invalid, queries return unknown_or_unloaded rather than out_of_bounds."
+    added: 2026-06-03
+    revised: "2026-06-03"
+
+  - name: actor_enterable
+    status: active
+    source: design/gdd/map-coordinate-blocking-y-sort-system.md
+    referenced_by:
+      - design/gdd/map-coordinate-blocking-y-sort-system.md
+      - design/gdd/click-movement-system.md
+    variables:
+      - bounds_valid
+      - in_bounds
+      - terrain_actor_passable
+      - target_occupied_by_other_actor
+      - target_reserved_by_other_actor
+    output_range: [false, true]
+    expression: "bounds_valid AND in_bounds AND terrain_actor_passable AND NOT target_occupied_by_other_actor AND NOT target_reserved_by_other_actor"
+    notes: "Determines whether a blocking actor may enter or reserve a target logical cell; dropped items do not block actor movement in MVP."
+    added: 2026-06-03
+    revised: "2026-06-03"
+
+  - name: item_placeable
+    status: active
+    source: design/gdd/map-coordinate-blocking-y-sort-system.md
+    referenced_by:
+      - design/gdd/map-coordinate-blocking-y-sort-system.md
+    variables:
+      - bounds_valid
+      - in_bounds
+      - required_item_placement_data_available
+      - terrain_item_placeable
+      - item_count
+      - same_cell_item_capacity
+      - item_capacity_available
+    output_range: [false, true]
+    expression: "bounds_valid AND required_item_placement_data_available AND in_bounds AND terrain_item_placeable AND item_capacity_available; item_capacity_available = item_count < same_cell_item_capacity; same_cell_item_capacity = 1 for Phase 1 playable contract"
+    notes: "Determines whether a dropped item may occupy a target logical cell. Phase 1 pickup-complete stories use same_cell_item_capacity = 1; missing item-placement data returns unknown_or_unloaded."
+    added: 2026-06-03
+    revised: "2026-06-03"
+
+  - name: reservation_commit_valid
+    status: active
+    source: design/gdd/map-coordinate-blocking-y-sort-system.md
+    referenced_by:
+      - design/gdd/map-coordinate-blocking-y-sort-system.md
+      - design/gdd/click-movement-system.md
+    variables:
+      - reservation_matches_current_move_claim
+      - source_occupied_by_requesting_actor
+      - target_reserved_by_requesting_actor
+      - bounds_valid_target
+      - required_actor_entry_data_available_target
+      - in_bounds_target
+      - terrain_actor_passable_target
+      - target_occupied_by_other_actor
+      - source_cell
+      - target_cell
+    output_range: [false, true]
+    expression: "reservation_matches_current_move_claim AND source_occupied_by_requesting_actor AND target_reserved_by_requesting_actor AND bounds_valid_target AND required_actor_entry_data_available_target AND in_bounds_target AND terrain_actor_passable_target AND NOT target_occupied_by_other_actor AND source_cell != target_cell"
+    notes: "MVP provisional movement reservation commit validity formula pending OpenMir2 movement evidence. Missing target bounds or actor-entry data returns unknown_or_unloaded rather than out_of_bounds."
+    added: 2026-06-03
+    revised: "2026-06-03"
+
+  - name: y_sort_key
+    status: active
+    source: design/gdd/map-coordinate-blocking-y-sort-system.md
+    referenced_by:
+      - design/gdd/map-coordinate-blocking-y-sort-system.md
+      - design/gdd/click-movement-system.md
+    variables:
+      - anchor_y
+      - anchor_y_valid
+      - object_type_sort_rank
+      - object_type_sort_rank_valid
+      - stable_instance_id
+      - stable_instance_id_valid
+      - stable_instance_id_comparable_with_active_set
+    output_range: [lexicographic_tuple, structured_failure_reason]
+    expression: "y_sort_key_valid = anchor_y_valid AND object_type_sort_rank_valid AND stable_instance_id_valid AND stable_instance_id_comparable_with_active_set; y_sort_key = (anchor_y, object_type_sort_rank, stable_instance_id) IF y_sort_key_valid; otherwise invalid_y_sort_anchor, invalid_y_sort_rank, or invalid_stable_sort_id"
+    notes: "Determines deterministic visual ordering for sortable map objects. Invalid anchors, missing type ranks, or incomparable stable IDs return structured presentation/debug reasons instead of falling back to scene-tree order."
+    added: 2026-06-03
+    revised: "2026-06-03"
+
+  - name: query_result_priority
+    status: active
+    source: design/gdd/map-coordinate-blocking-y-sort-system.md
+    referenced_by:
+      - design/gdd/map-coordinate-blocking-y-sort-system.md
+      - design/gdd/click-movement-system.md
+    variables:
+      - candidate_reasons
+      - query_context
+      - coordinate_resolved
+      - bounds_valid
+      - required_query_data_available
+      - in_bounds
+      - source_cell
+      - target_cell
+      - terrain_blocks_query
+      - target_occupied_by_other_actor
+      - target_reserved_by_other_actor
+      - item_capacity_available
+      - item_count
+      - pickup_selection_order_available
+      - anchor_y_valid
+      - object_type_sort_rank_valid
+      - stable_instance_id_valid
+      - stable_instance_id_comparable_with_active_set
+    output_range: [reason_enum, reason_enum]
+    expression: "first_reason_by_priority(candidate_reasons); pickup_candidate_available IF item_count = 1 OR (item_count > 1 AND pickup_selection_order_available); invalid_y_sort_rank IF presentation_debug AND anchor_y_valid AND NOT object_type_sort_rank_valid; priority = invalid_coordinate > unknown_or_unloaded > out_of_bounds > no_movement_requested > invalid_y_sort_anchor > invalid_y_sort_rank > invalid_stable_sort_id > blocked_by_static_map > blocked_by_actor > reserved > item_capacity_full > no_item_present > pickup_selection_order_unresolved > pickup_candidate_available > walkable/item_placeable"
+    notes: "Selects the canonical structured reason for a single query_context, including actor entry, item placement, reservation, pickup spatial candidate, and presentation/debug queries."
+    added: 2026-06-03
+    revised: "2026-06-03"
+
+  - name: effective_stat
+    status: active
+    source: design/gdd/character-attributes-system.md
+    referenced_by:
+      - design/gdd/character-attributes-system.md
+    variables:
+      - stat_id
+      - base_stat_value
+      - sum_active_flat_modifiers
+      - stat_min_bound
+      - stat_max_bound
+      - stat_config_valid
+      - stat_clamp_policy
+    output_range: [effective_stat_integer, structured_failure]
+    expression: "stat_config_valid(stat_id) = stat_id_enabled AND stat_min_bound(stat_id) <= stat_max_bound(stat_id); effective_stat(stat_id) = clamp(base_stat_value(stat_id) + sum_active_flat_modifiers(stat_id), stat_min_bound(stat_id), stat_max_bound(stat_id)) IF stat_config_valid; otherwise structured_failure(invalid_stat_config, stat_id)"
+    notes: "Calculates a scalar effective stat for the Phase 1 MVP attribute snapshot. Child inputs must be finite integers in technical safe range; unsupported modifier ops, unknown IDs, invalid bounds, or numeric overflow return structured failure rather than wrapping or coercing."
+    added: 2026-06-04
+    revised: "2026-06-04"
+
+  - name: effective_stat_pair
+    status: active
+    source: design/gdd/character-attributes-system.md
+    referenced_by:
+      - design/gdd/character-attributes-system.md
+    variables:
+      - pair_id
+      - pair_min_stat_id
+      - pair_max_stat_id
+      - pair_bound_config_valid
+      - pair_min_final
+      - pair_max_final
+    output_range: [success_pair, structured_failure]
+    expression: "pair_bound_config_valid(pair_id) = stat_min_bound(pair_min_stat_id) <= stat_max_bound(pair_max_stat_id); pair_min_final = effective_stat(pair_min_stat_id); pair_max_final = effective_stat(pair_max_stat_id); success(pair_min_final, pair_max_final) IF child formulas succeed AND pair_bound_config_valid AND pair_min_final <= pair_max_final; otherwise propagate child failure or structured_failure(invalid_pair_bound_config/invalid_stat_pair, pair_id)"
+    notes: "Validates active MVP min/max pairs such as physical attack and physical defense. Nested effective_stat failures propagate; invalid pairs are not silently swapped or normalized."
+    added: 2026-06-04
+    revised: "2026-06-04"
+
+  - name: current_resource_after
+    status: active
+    source: design/gdd/character-attributes-system.md
+    referenced_by:
+      - design/gdd/character-attributes-system.md
+    variables:
+      - resource_id
+      - resource_current_before
+      - resource_delta
+      - resource_min_bound
+      - resource_max_after
+      - resource_reason
+      - resource_bounds_valid
+      - combat_ready_health_valid
+    output_range: [current_resource_integer, structured_failure]
+    expression: "resource_max_after(resource_id) = effective_stat(resource_max_stat_id); resource_bounds_valid(resource_id) = resource_min_bound(resource_id) <= resource_max_after(resource_id); current_resource_after(resource_id) = clamp(resource_current_before + resource_delta, resource_min_bound(resource_id), resource_max_after(resource_id)) IF resource_bounds_valid AND resource_reason permits correction; otherwise propagate max-stat failure or structured_failure(invalid_resource_bounds/resource_request_invalid)"
+    notes: "Clamps current HP/MP only for approved resource reasons. Damage/heal/spend/restore/max-resource clamp/load/spawn/debug use distinct reason policies; max-resource correction is not combat damage/healing. Combat-ready live actors require health_max > 0."
+    added: 2026-06-04
+    revised: "2026-06-04"
+
+  - name: snapshot_valid
+    status: active
+    source: design/gdd/character-attributes-system.md
+    referenced_by:
+      - design/gdd/character-attributes-system.md
+    variables:
+      - config_valid
+      - identity_valid
+      - all_required_inputs_present
+      - source_input_valid
+      - all_active_stats_calculated
+      - all_required_pairs_valid
+      - all_current_resources_valid
+      - combat_readiness_valid
+      - snapshot_failure_reasons
+    output_range: [false, true]
+    expression: "snapshot_valid = config_valid AND identity_valid AND all_required_inputs_present AND source_input_valid AND all_active_stats_calculated AND all_required_pairs_valid AND all_current_resources_valid AND combat_readiness_valid"
+    notes: "Determines whether an AttributeSnapshot can be published to downstream systems. Failure reasons are canonical codes sorted by registry order and include config/source/input/pair/resource/combat-readiness failures. Invalid snapshots are not combat-consumable; previous valid snapshots may only be stale/display fallback."
+    added: 2026-06-04
+    revised: "2026-06-04"
+
+  - name: attribute_delta
+    status: active
+    source: design/gdd/character-attributes-system.md
+    referenced_by:
+      - design/gdd/character-attributes-system.md
+    variables:
+      - stat_id
+      - snapshot_before_value
+      - snapshot_after_value
+      - snapshot_before_actor_id
+      - snapshot_after_actor_id
+      - snapshot_before_schema_version
+      - snapshot_after_schema_version
+      - snapshot_before_config_version
+      - snapshot_after_config_version
+      - snapshot_before_version
+      - snapshot_after_version
+      - preview_non_authoritative
+    output_range: [signed_difference, structured_failure]
+    expression: "attribute_delta(stat_id) = snapshot_after_value(stat_id) - snapshot_before_value(stat_id) IF snapshots are valid, actor IDs match, schema/config versions match, stat exists in both snapshots, and authoritative after-version is newer unless preview_non_authoritative; otherwise structured_failure(delta_invalid_snapshot/delta_actor_mismatch/delta_incomparable_schema/delta_incomparable_config/delta_missing_stat/delta_stale_or_reversed_version)"
+    notes: "Reports signed differences between comparable snapshots or current-vs-preview result. Cross-config/schema comparisons require explicit migration policy and otherwise fail."
+    added: 2026-06-04
+    revised: "2026-06-04"
+
+  - name: snapshot_delta
+    status: active
+    source: design/gdd/character-attributes-system.md
+    referenced_by:
+      - design/gdd/character-attributes-system.md
+    variables:
+      - comparable_stat_ids
+      - comparable_pair_ids
+      - delta_request_mode
+      - attribute_delta
+      - attribute_pair_delta
+    output_range: [sparse_delta_map, sparse_pair_delta_map, structured_failure]
+    expression: "snapshot_delta = ordered sparse non-zero deltas for requested comparable_stat_ids; explicit requested-set mode fails on missing active requested stats; visible_player_summary filters inactive/reserved/debug-only stats before calculation; debug_full may include hidden/debug stats if schema/config comparable; pair and scalar views must not double-count"
+    notes: "Produces snapshot-level diff output for equipment, HUD, growth feedback, save/load diagnostics, and debug tools. Incomparable snapshots or missing requested active stats return structured failure rather than silent partial output."
+    added: 2026-06-04
+    revised: "2026-06-04"
+
+  - name: combat_power
+    status: active
+    source: design/gdd/character-attributes-system.md
+    referenced_by:
+      - design/gdd/character-attributes-system.md
+    variables:
+      - attack_weight
+      - defense_weight
+      - health_weight
+      - secondary_weight
+      - physical_attack_pair
+      - physical_defense_pair
+      - health_max
+      - secondary_contribution
+      - combat_power_raw
+    output_range: [non_negative_integer, structured_failure]
+    expression: "combat_power_config_valid = all weights >= 0 AND at least one active player-facing weight > 0; secondary_contribution = sum(secondary_weight_j * effective_stat(secondary_stat_id_j)) for enabled, combat-active, player-facing secondary stats; combat_power_raw = attack_weight * average_pair(physical_attack) + defense_weight * average_pair(physical_defense) + health_weight * health_max + secondary_contribution; combat_power = round_to_int(combat_power_raw) IF config and child stat/pair formulas succeed; otherwise structured_failure(invalid_combat_power_config/combat_power_no_active_weight or propagated child failure)"
+    notes: "MVP provisional display-only comparison score for equipment UI and growth feedback. It is not OpenMir2-authentic and does not define damage, DPS, or TTK. Inactive/reserved stats contribute exactly 0."
+    added: 2026-06-04
+    revised: "2026-06-04"
+
+  - name: stack_quantity_valid
+    status: active
+    source: design/gdd/item-definition-system.md
+    referenced_by:
+      - design/gdd/item-definition-system.md
+    variables:
+      - stack_policy
+      - max_stack_size
+      - quantity
+      - quantity_is_integer
+    output_range: [false, true]
+    expression: "quantity_is_integer AND quantity >= 1 AND ((stack_policy = non_stackable AND max_stack_size = 1 AND quantity = 1) OR (stack_policy = stackable AND max_stack_size > 1 AND quantity <= max_stack_size))"
+    notes: "Validates candidate stack quantity against item-definition stack policy and max stack size. Invalid quantities are rejected rather than clamped."
+    added: 2026-06-04
+    revised: "2026-06-04"
+
+  - name: modifier_payload_row_valid
+    status: active
+    source: design/gdd/item-definition-system.md
+    referenced_by:
+      - design/gdd/item-definition-system.md
+    variables:
+      - modifier_row_present
+      - modifier_row_enabled
+      - modifier_op
+      - target_stat_known
+      - target_stat_modifier_targetable
+      - target_stat_current_resource
+      - modifier_value_is_integer
+      - modifier_value_within_safe_range
+    output_range: [false, true]
+    expression: "modifier_row_present AND modifier_row_enabled AND modifier_op = add_flat AND target_stat_known AND target_stat_modifier_targetable AND NOT target_stat_current_resource AND modifier_value_is_integer AND modifier_value_within_safe_range"
+    notes: "Validates one equipment modifier payload row before Equipment resolves it into a Character Attributes modifier source. Phase 1 permits add_flat only and rejects current-resource targets."
+    added: 2026-06-04
+    revised: "2026-06-04"
+
+  - name: modifier_payload_valid
+    status: active
+    source: design/gdd/item-definition-system.md
+    referenced_by:
+      - design/gdd/item-definition-system.md
+    variables:
+      - item_type
+      - modifier_row_count
+      - equipment_min_modifier_rows
+      - equipment_max_modifier_rows
+      - all_modifier_payload_rows_valid
+    output_range: [false, true]
+    expression: "(modifier_row_count = 0 AND item_type != equipment) OR (item_type = equipment AND modifier_row_count >= equipment_min_modifier_rows AND modifier_row_count <= equipment_max_modifier_rows AND all_modifier_payload_rows_valid)"
+    notes: "Determines whether an item definition may hand modifier payload data to Equipment. Non-equipment items require zero active modifier rows in Phase 1."
+    added: 2026-06-04
+    revised: "2026-06-04"
+
+  - name: item_reference_lookup_resolvable
+    status: active
+    source: design/gdd/item-definition-system.md
+    referenced_by:
+      - design/gdd/item-definition-system.md
+    variables:
+      - item_id_present
+      - item_id_format_valid
+      - item_id_registered_in_runtime_definitions
+      - referenced_definition_version_supported
+    output_range: [false, true, structured_reason_set]
+    expression: "item_id_present AND item_id_format_valid AND item_id_registered_in_runtime_definitions AND referenced_definition_version_supported"
+    notes: "Determines whether a downstream item reference can locate a supported runtime definition row. Deprecated/debug/blocked status is resolved by later profile eligibility gates, not by lookup alone."
+    added: 2026-06-04
+    revised: "2026-06-04"
+
+  - name: item_definition_semantically_valid
+    status: active
+    source: design/gdd/item-definition-system.md
+    referenced_by:
+      - design/gdd/item-definition-system.md
+    variables:
+      - identity_valid
+      - display_metadata_valid
+      - item_type_valid
+      - quality_valid
+      - stack_policy_valid
+      - equipment_stack_policy_valid
+      - equipment_data_valid
+      - modifier_payload_valid
+      - evidence_labels_valid
+      - player_facing_metadata_valid
+    output_range: [false, true, structured_reason_set]
+    expression: "identity_valid AND display_metadata_valid AND item_type_valid AND quality_valid AND stack_policy_valid AND equipment_stack_policy_valid AND equipment_data_valid AND modifier_payload_valid AND evidence_labels_valid AND player_facing_metadata_valid"
+    notes: "Determines whether one item definition row is structurally and semantically valid independent of runtime profile. Debug-only or deprecated rows may be semantically valid but fail profile eligibility."
+    added: 2026-06-04
+    revised: "2026-06-04"
+
+  - name: definition_profile_eligible
+    status: active
+    source: design/gdd/item-definition-system.md
+    referenced_by:
+      - design/gdd/item-definition-system.md
+    variables:
+      - item_definition_semantically_valid
+      - lifecycle_state_allowed_for_profile
+      - item_type_allowed_for_profile
+      - source_status_allowed_for_profile
+      - debug_hidden_in_profile
+      - blocked_unconfirmed_in_profile
+    output_range: [false, true, structured_reason_set]
+    expression: "item_definition_semantically_valid AND lifecycle_state_allowed_for_profile AND item_type_allowed_for_profile AND source_status_allowed_for_profile AND NOT debug_hidden_in_profile AND NOT blocked_unconfirmed_in_profile"
+    notes: "Determines whether a semantically valid definition is eligible for a specific validation/runtime profile such as normal spawn, debug runtime, content smoke, or save-load resolution."
+    added: 2026-06-04
+    revised: "2026-06-04"
+
+  - name: spawn_eligible_reference
+    status: active
+    source: design/gdd/item-definition-system.md
+    referenced_by:
+      - design/gdd/item-definition-system.md
+      - design/gdd/drop-table-system.md
+    variables:
+      - item_reference_lookup_resolvable
+      - referenced_definition_profile_eligible
+      - spawn_profile_allows_item_type
+      - referenced_definition_deprecated_for_new_spawn
+    output_range: [false, true, structured_reason_set]
+    expression: "item_reference_lookup_resolvable AND referenced_definition_profile_eligible AND spawn_profile_allows_item_type AND NOT referenced_definition_deprecated_for_new_spawn"
+    notes: "Determines whether an external drop/spawn reference points to a definition eligible for normal spawning. It does not define drop chance, timing, placement, or quantity."
+    added: 2026-06-04
+    revised: "2026-06-05"
+
+  - name: drop_group_total_weight
+    status: active
+    source: design/gdd/drop-table-system.md
+    referenced_by:
+      - design/gdd/drop-table-system.md
+    variables:
+      - no_drop_weight
+      - row_weight_i
+    output_range: [1, 1000000, structured_reason_set]
+    expression: "no_drop_weight + sum(row_weight_i for all enabled valid rows in group)"
+    notes: "Determines whether a drop roll group has a valid selectable total weight. Negative, zero-total, or overflow configurations fail validation."
+    added: 2026-06-05
+    revised: ""
+
+  - name: selected_drop_entry
+    status: active
+    source: design/gdd/drop-table-system.md
+    referenced_by:
+      - design/gdd/drop-table-system.md
+    variables:
+      - roll_value
+      - drop_group_total_weight
+      - cumulative_weight_candidate
+    output_range: [NO_DROP, row_id, structured_reason_set]
+    expression: "roll_value = rng_int(0, drop_group_total_weight - 1); selected_drop_entry = first candidate where cumulative_weight_candidate > roll_value"
+    notes: "Defines deterministic weighted single selection in stable candidate order. Roll authority must use injected deterministic RNG, not global RNG or scene order."
+    added: 2026-06-05
+    revised: ""
+
+  - name: drop_row_probability
+    status: active
+    source: design/gdd/drop-table-system.md
+    referenced_by:
+      - design/gdd/drop-table-system.md
+    variables:
+      - row_weight_i
+      - drop_group_total_weight
+    output_range: [0.0, 1.0]
+    expression: "row_weight_i / drop_group_total_weight"
+    notes: "Computes per-attempt probability for a row in a mutually exclusive weighted_single group. No-drop probability uses the same formula with no_drop_weight."
+    added: 2026-06-05
+    revised: ""
+
+  - name: expected_attempts_for_row
+    status: active
+    source: design/gdd/drop-table-system.md
+    referenced_by:
+      - design/gdd/drop-table-system.md
+    variables:
+      - drop_row_probability_i
+    output_range: [1.0, Infinity, undefined_if_probability_zero]
+    expression: "1 / drop_row_probability_i"
+    notes: "QA-facing expected attempts metric for one row. Probability zero means the row is disabled/not normally acquirable and expected attempts are undefined."
+    added: 2026-06-05
+    revised: ""
+
+  - name: expected_attempts_for_tier
+    status: active
+    source: design/gdd/drop-table-system.md
+    referenced_by:
+      - design/gdd/drop-table-system.md
+    variables:
+      - tier_probability
+      - drop_row_probability_i
+    output_range: [1.0, Infinity, undefined_if_probability_zero]
+    expression: "tier_probability = sum(drop_row_probability_i for mutually exclusive tier rows); expected_attempts_for_tier = 1 / tier_probability"
+    notes: "QA-facing expected attempts metric for a tier of mutually exclusive rows. Independent future groups must use complement probability instead."
+    added: 2026-06-05
+    revised: ""
+
+  - name: drop_quantity_result
+    status: active
+    source: design/gdd/drop-table-system.md
+    referenced_by:
+      - design/gdd/drop-table-system.md
+    variables:
+      - fixed_quantity
+      - quantity_min
+      - quantity_max
+      - deterministic_rng_int
+      - stack_quantity_valid
+    output_range: [1, item_max_stack_size, structured_reason_set]
+    expression: "fixed policy: fixed_quantity; uniform policy: quantity_min + rng_int(0, quantity_max - quantity_min); then validate through stack_quantity_valid"
+    notes: "Defines item grant quantity intent. Equipment rows are fixed at 1 in Phase 1; material rows must satisfy Item Definition stack limits."
+    added: 2026-06-05
+    revised: ""
+
+  - name: drop_table_valid
+    status: active
+    source: design/gdd/drop-table-system.md
+    referenced_by:
+      - design/gdd/drop-table-system.md
+    variables:
+      - table_identity_valid
+      - all_groups_valid
+      - all_rows_valid
+      - all_item_references_spawn_eligible
+      - all_quantity_policies_valid
+      - evidence_labels_valid
+    output_range: [false, true, structured_reason_set]
+    expression: "table_identity_valid AND all_groups_valid AND all_rows_valid AND all_item_references_spawn_eligible AND all_quantity_policies_valid AND evidence_labels_valid"
+    notes: "Determines whether a drop table may be used for normal gameplay. Invalid rows fail the table in normal mode rather than being silently skipped."
+    added: 2026-06-05
+    revised: ""
+
 
 # Example:
 #

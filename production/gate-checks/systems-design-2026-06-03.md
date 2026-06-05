@@ -1,8 +1,8 @@
 # Gate Check: Systems Design → Technical Setup
 
-**Date**: 2026-06-03  
-**Checked by**: `gate-check` skill  
-**Review mode**: `full`  
+**Date**: 2026-06-03
+**Checked by**: `gate-check` skill
+**Review mode**: `full`
 **Verdict**: FAIL
 
 ---
@@ -60,16 +60,16 @@
 
 ## Blockers
 
-1. **No MVP-tier system GDDs exist**  
+1. **No MVP-tier system GDDs exist**
    Run `/design-system [system-name]` for MVP systems in index order.
 
-2. **No individual design reviews exist**  
+2. **No individual design reviews exist**
    Run `/design-review design/gdd/[system].md` after each completed system GDD.
 
-3. **No cross-GDD review exists**  
+3. **No cross-GDD review exists**
    Run `/review-all-gdds` after a related MVP batch exists.
 
-4. **OpenMir2 / Godot boundary risks are not yet specified per system**  
+4. **OpenMir2 / Godot boundary risks are not yet specified per system**
    Each MVP GDD must include `Owns / Reads / Writes / Emits / Listens`.
 
 ---

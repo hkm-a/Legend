@@ -40,4 +40,7 @@ if [ -n "$RECENT_COMMITS" ] || [ -n "$MODIFIED_FILES" ]; then
     } >> "$SESSION_LOG_DIR/session-log.md" 2>/dev/null
 fi
 
+# Stop hooks in this Claude Code build require valid JSON on stdout. Emit the
+# minimal accepted object after preserving the filesystem side effects above.
+printf '{}\n'
 exit 0

@@ -70,46 +70,46 @@ func _resolve_node_path(node_path: String) -> Node:
 	var scene_root: Node = _get_user_scene_root()
 	if not scene_root:
 		return null
-	
+
 	if node_path == "/root" or node_path.is_empty():
 		return scene_root
-	
+
 	var relative: String = node_path.trim_prefix("/root/")
 	var parts: PackedStringArray = relative.split("/")
-	
+
 	if parts.size() > 0 and parts[0] == scene_root.name:
 		if parts.size() == 1:
 			return scene_root
 		var sub_path: String = "/".join(parts.slice(1))
 		return scene_root.get_node_or_null(sub_path)
-	
+
 	return scene_root.get_node_or_null(relative)
 
 func _tool_create_node(params: Dictionary) -> Dictionary:
 	var parent_path: String = params.get("parent_path", "")
 	var node_type: String = params.get("node_type", "Node")
 	var node_name: String = params.get("node_name", "NewNode")
-	
+
 	var editor_interface: EditorInterface = _get_editor_interface()
 	if not editor_interface:
 		return {"error": "Editor interface not available"}
-	
+
 	var parent: Node = _resolve_node_path(parent_path)
 	if not parent:
 		if parent_path == "/root" or parent_path.is_empty():
 			parent = _get_user_scene_root()
-	
+
 	if not parent:
 		return {"error": "Parent node not found: " + parent_path}
-	
+
 	if not ClassDB.class_exists(node_type):
 		return {"error": "Invalid node type: " + node_type}
-	
+
 	var node: Node = ClassDB.instantiate(node_type)
 	node.name = node_name
-	
+
 	var scene_root: Node = _get_user_scene_root()
-	
+
 	# Traverse parent chain to find correct owner for nested/instanced scenes.
 	# If parent is inside an instanced sub-scene, use parent.owner instead of scene_root.
 	var correct_owner: Node = scene_root
@@ -120,7 +120,7 @@ func _tool_create_node(params: Dictionary) -> Dictionary:
 				correct_owner = current.owner
 				break
 			current = current.get_parent()
-	
+
 	# Wrap in EditorUndoRedoManager so the editor properly tracks the change
 	var undo_redo: EditorUndoRedoManager = editor_interface.get_editor_undo_redo()
 	if undo_redo:
@@ -133,16 +133,16 @@ func _tool_create_node(params: Dictionary) -> Dictionary:
 		parent.add_child(node)
 		if correct_owner:
 			node.owner = correct_owner
-	
+
 	editor_interface.mark_scene_as_unsaved()
-	
+
 	var friendly_path: String = "/root/" + scene_root.name if scene_root else "/root"
 	var node_friendly: String = str(node.get_path())
 	if scene_root:
 		var root_full: String = str(scene_root.get_path())
 		if node_friendly.begins_with(root_full):
 			node_friendly = "/root/" + scene_root.name + node_friendly.substr(root_full.length())
-	
+
 	return {
 		"status": "success",
 		"node_path": node_friendly,
@@ -177,27 +177,27 @@ func _register_delete_node(server_core: RefCounted) -> void:
 
 func _tool_delete_node(params: Dictionary) -> Dictionary:
 	var node_path: String = params.get("node_path", "")
-	
+
 	if node_path.is_empty():
 		return {"error": "Missing required parameter: node_path"}
-	
+
 	var editor_interface: EditorInterface = _get_editor_interface()
 	if not editor_interface:
 		return {"error": "Editor interface not available"}
-	
+
 	var node_to_delete: Node = _resolve_node_path(node_path)
-	
+
 	if not node_to_delete:
 		return {"error": "Node not found: " + node_path}
-	
+
 	var deleted_node_name: String = node_to_delete.name
 	var parent: Node = node_to_delete.get_parent()
 	if parent:
 		parent.remove_child(node_to_delete)
-	
+
 	node_to_delete.queue_free()
 	editor_interface.mark_scene_as_unsaved()
-	
+
 	return {
 		"status": "success",
 		"deleted_node": deleted_node_name
@@ -243,26 +243,26 @@ func _tool_update_node_property(params: Dictionary) -> Dictionary:
 	var node_path: String = params.get("node_path", "")
 	var property_name: String = params.get("property_name", "")
 	var property_value: Variant = params.get("property_value", null)
-	
+
 	if node_path.is_empty():
 		return {"error": "Missing required parameter: node_path"}
 	if property_name.is_empty():
 		return {"error": "Missing required parameter: property_name"}
 	if property_value == null:
 		return {"error": "Missing required parameter: property_value"}
-	
+
 	var editor_interface: EditorInterface = _get_editor_interface()
 	if not editor_interface:
 		return {"error": "Editor interface not available"}
-	
+
 	var target_node: Node = _resolve_node_path(node_path)
-	
+
 	if not target_node:
 		return {"error": "Node not found: " + node_path}
-	
+
 	if not property_name in target_node:
 		return {"error": "Property '" + property_name + "' not found on node " + node_path}
-	
+
 	var old_value: Variant = target_node.get(property_name)
 	var actual_value: Variant = property_value
 	if property_value is String:
@@ -270,12 +270,12 @@ func _tool_update_node_property(params: Dictionary) -> Dictionary:
 		if parsed != null:
 			actual_value = parsed
 	var converted_value: Variant = _convert_value_for_property(target_node, property_name, actual_value)
-	
+
 	# Validate res:// resource paths before setting
 	if actual_value is String and (actual_value as String).begins_with("res://"):
 		if not ResourceLoader.exists(actual_value):
 			return {"error": "Resource path does not exist: " + actual_value}
-	
+
 	var undo_redo: EditorUndoRedoManager = editor_interface.get_editor_undo_redo()
 	if undo_redo:
 		undo_redo.create_action("Update Property: " + property_name)
@@ -284,11 +284,11 @@ func _tool_update_node_property(params: Dictionary) -> Dictionary:
 		undo_redo.commit_action()
 	else:
 		target_node.set(property_name, converted_value)
-	
+
 	var new_value: Variant = target_node.get(property_name)
-	
+
 	editor_interface.mark_scene_as_unsaved()
-	
+
 	return {
 		"status": "success",
 		"node_path": node_path,
@@ -366,7 +366,7 @@ func _tool_batch_update_node_properties(params: Dictionary) -> Dictionary:
 			if parsed != null:
 				actual_value = parsed
 		var converted_value: Variant = _convert_value_for_property(target_node, property_name, actual_value)
-		
+
 		# Validate res:// resource paths before setting
 		if actual_value is String and (actual_value as String).begins_with("res://"):
 			if not ResourceLoader.exists(actual_value):
@@ -796,22 +796,22 @@ func _register_get_node_properties(server_core: RefCounted) -> void:
 
 func _tool_get_node_properties(params: Dictionary) -> Dictionary:
 	var node_path: String = params.get("node_path", "")
-	
+
 	if node_path.is_empty():
 		return {"error": "Missing required parameter: node_path"}
-	
+
 	var editor_interface: EditorInterface = _get_editor_interface()
 	if not editor_interface:
 		return {"error": "Editor interface not available"}
-	
+
 	var target_node: Node = _resolve_node_path(node_path)
-	
+
 	if not target_node:
 		return {"error": "Node not found: " + node_path}
-	
+
 	var properties: Dictionary = {}
 	var property_list: Array = target_node.get_property_list()
-	
+
 	for property_dict in property_list:
 		var prop_name: String = property_dict.get("name", "")
 		if prop_name.begins_with("__"):
@@ -821,7 +821,7 @@ func _tool_get_node_properties(params: Dictionary) -> Dictionary:
 			continue
 		var value = target_node.get(prop_name)
 		properties[prop_name] = _serialize_value(value)
-	
+
 	return {
 		"node_path": node_path,
 		"node_type": target_node.get_class(),
@@ -860,27 +860,27 @@ func _register_list_nodes(server_core: RefCounted) -> void:
 func _tool_list_nodes(params: Dictionary) -> Dictionary:
 	var parent_path: String = params.get("parent_path", "")
 	var recursive: bool = params.get("recursive", true)
-	
+
 	var editor_interface: EditorInterface = _get_editor_interface()
 	if not editor_interface:
 		return {"error": "Editor interface not available"}
-	
+
 	var scene_root: Node = _get_user_scene_root()
 	if not scene_root:
 		return {"error": "No scene is currently open"}
-	
+
 	var start_node: Node = _get_user_scene_root()
 	if not start_node:
 		return {"error": "No scene is currently open"}
-	
+
 	if not parent_path.is_empty() and parent_path != "/root":
 		start_node = _resolve_node_path(parent_path)
 		if not start_node:
 			return {"error": "Parent node not found: " + parent_path}
-	
+
 	var nodes_list: Array[String] = []
 	_collect_nodes(start_node, "", recursive, nodes_list, scene_root)
-	
+
 	return {
 		"nodes": nodes_list,
 		"count": nodes_list.size()
@@ -914,18 +914,18 @@ func _register_get_scene_tree(server_core: RefCounted) -> void:
 
 func _tool_get_scene_tree(params: Dictionary) -> Dictionary:
 	var max_depth: int = params.get("max_depth", -1)
-	
+
 	var editor_interface: EditorInterface = _get_editor_interface()
 	if not editor_interface:
 		return {"error": "Editor interface not available"}
-	
+
 	var scene_root: Node = _get_user_scene_root()
 	if not scene_root:
 		return {"error": "No scene is currently open"}
-	
+
 	var tree: Dictionary = _build_scene_tree_node(scene_root, 0, max_depth, scene_root)
 	var total_nodes: int = _count_all_nodes(scene_root)
-	
+
 	return {
 		"scene_name": scene_root.name,
 		"tree": tree,
@@ -945,17 +945,17 @@ func _get_user_scene_root() -> Node:
 	var editor_interface: EditorInterface = _get_editor_interface()
 	if not editor_interface:
 		return null
-	
+
 	var scene_root: Node = editor_interface.get_edited_scene_root()
 	if scene_root and not scene_root.name.begins_with("@") and scene_root.get_class() != "PanelContainer":
 		return scene_root
-	
+
 	var open_scene_roots: Array = editor_interface.get_open_scene_roots()
 	for root in open_scene_roots:
 		var node_root: Node = root
 		if node_root and not node_root.name.begins_with("@") and node_root.get_class() != "PanelContainer":
 			return node_root
-	
+
 	return scene_root
 
 static func _make_friendly_path(node: Node, scene_root: Node) -> String:
@@ -987,16 +987,16 @@ static func _collect_nodes(node: Node, path: String, recursive: bool, result: Ar
 func _convert_value_for_property(node: Node, property_name: String, value: Variant) -> Variant:
 	if value == null:
 		return value
-	
+
 	var property_type: int = TYPE_NIL
 	for prop in node.get_property_list():
 		if prop["name"] == property_name:
 			property_type = prop["type"]
 			break
-	
+
 	if property_type == TYPE_NIL:
 		return value
-	
+
 	match property_type:
 		TYPE_VECTOR2:
 			if value is Dictionary:
@@ -1077,7 +1077,7 @@ func _convert_value_for_property(node: Node, property_name: String, value: Varia
 						return loaded_resource
 				if ClassDB.class_exists(value) and ClassDB.is_parent_class(value, "Resource"):
 					return ClassDB.instantiate(value)
-	
+
 	return value
 
 func _parse_key_value_string(value: String) -> Dictionary:
@@ -1250,7 +1250,7 @@ static func _build_scene_tree_node(node: Node, current_depth: int, max_depth: in
 		"path": _make_friendly_path(node, scene_root),
 		"child_count": node.get_child_count()
 	}
-	
+
 	var important_props: Array[String] = ["visible", "position", "rotation", "scale", "modulate"]
 	var properties: Dictionary = {}
 	for prop_name in important_props:
@@ -1258,12 +1258,12 @@ static func _build_scene_tree_node(node: Node, current_depth: int, max_depth: in
 			properties[prop_name] = _serialize_value(node.get(prop_name))
 	if properties.size() > 0:
 		node_info["properties"] = properties
-	
+
 	if max_depth >= 0 and current_depth >= max_depth:
 		if node.get_child_count() > 0:
 			node_info["children_truncated"] = true
 		return node_info
-	
+
 	if node.get_child_count() > 0:
 		var children: Array[Dictionary] = []
 		for child_index in range(node.get_child_count()):
@@ -1271,7 +1271,7 @@ static func _build_scene_tree_node(node: Node, current_depth: int, max_depth: in
 			var child_info: Dictionary = _build_scene_tree_node(child, current_depth + 1, max_depth, scene_root)
 			children.append(child_info)
 		node_info["children"] = children
-	
+
 	return node_info
 
 static func _count_all_nodes(node: Node) -> int:
@@ -1609,7 +1609,7 @@ func _tool_add_resource(params: Dictionary) -> Dictionary:
 	var scene_root: Node = _get_user_scene_root()
 	if scene_root:
 		resource_node.owner = scene_root
-	
+
 	# Apply optional property values after creation
 	var properties: Dictionary = params.get("properties", {})
 	if properties is Dictionary and not properties.is_empty():

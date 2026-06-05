@@ -66,7 +66,7 @@ class MCPTool:
 	var enabled: bool = true
 	var category: String = "core"
 	var group: String = ""
-	
+
 	# 转换为Dictionary（用于JSON序列化）
 	func to_dict() -> Dictionary:
 		var result: Dictionary = {
@@ -76,15 +76,15 @@ class MCPTool:
 			"x_category": category,
 			"x_group": group
 		}
-		
+
 		if not output_schema.is_empty():
 			result["outputSchema"] = output_schema
-		
+
 		if not annotations.is_empty():
 			result["annotations"] = annotations
-		
+
 		return result
-	
+
 	# 验证工具定义是否有效
 	func is_valid() -> bool:
 		if name.is_empty():
@@ -94,9 +94,9 @@ class MCPTool:
 		if not callable.is_valid():
 			return false
 		return true
-	
+
 	# 创建annotations的帮助方法（根据mcp-builder）
-	static func create_annotations(read_only: bool = false, 
+	static func create_annotations(read_only: bool = false,
 								   destructive: bool = false,
 								   idempotent: bool = false,
 								   open_world: bool = false) -> Dictionary:
@@ -117,7 +117,7 @@ class MCPResource:
 	var description: String = ""  # 新增（根据mcp-builder）
 	var mime_type: String = "application/octet-stream"
 	var load_callable: Callable = Callable()
-	
+
 	# 转换为Dictionary
 	func to_dict() -> Dictionary:
 		var result: Dictionary = {
@@ -125,13 +125,13 @@ class MCPResource:
 			"name": name,
 			"mimeType": mime_type
 		}
-		
+
 		# 添加description（根据mcp-builder）
 		if not description.is_empty():
 			result["description"] = description
-		
+
 		return result
-	
+
 	# 验证资源定义是否有效
 	func is_valid() -> bool:
 		if uri.is_empty():
@@ -150,14 +150,14 @@ class MCPPrompt:
 	var name: String = ""
 	var description: String = ""
 	var arguments: Array[Dictionary] = []  # [{name, description, required}]
-	
+
 	func to_dict() -> Dictionary:
 		return {
 			"name": name,
 			"description": description,
 			"arguments": arguments
 		}
-	
+
 	func is_valid() -> bool:
 		return not name.is_empty()
 
@@ -173,7 +173,7 @@ static func normalize_jsonrpc_id(id: Variant) -> Variant:
 		var integer_id: int = int(id)
 		if is_equal_approx(id, float(integer_id)):
 			return integer_id
-	
+
 	return id
 
 # 创建标准JSON-RPC响应
@@ -190,10 +190,10 @@ static func create_error_response(id: Variant, code: int, message: String, data:
 		"code": code,
 		"message": message
 	}
-	
+
 	if data != null:
 		error["data"] = data
-	
+
 	return {
 		"jsonrpc": JSONRPC_VERSION,
 		"id": normalize_jsonrpc_id(id),
@@ -206,10 +206,10 @@ static func create_capabilities(tools_changed: bool = true,
 								resources_changed: bool = true,
 								prompts_changed: bool = true) -> Dictionary:
 	var capabilities: Dictionary = {}
-	
+
 	if tools_changed:
 		capabilities["tools"] = {"listChanged": true}
-	
+
 	if resources_subscribe or resources_changed:
 		var resources_cap: Dictionary = {}
 		if resources_subscribe:
@@ -217,10 +217,10 @@ static func create_capabilities(tools_changed: bool = true,
 		if resources_changed:
 			resources_cap["listChanged"] = true
 		capabilities["resources"] = resources_cap
-	
+
 	if prompts_changed:
 		capabilities["prompts"] = {"listChanged": true}
-	
+
 	return capabilities
 
 # 验证路径是否安全（根据mcp-builder安全最佳实践）
@@ -228,34 +228,34 @@ static func is_path_safe(path: String) -> bool:
 	# 检查白名单
 	var allowed_prefixes: Array[String] = ["res://", "user://"]
 	var is_allowed: bool = false
-	
+
 	for prefix in allowed_prefixes:
 		if path.begins_with(prefix):
 			is_allowed = true
 			break
-	
+
 	if not is_allowed:
 		return false
-	
+
 	# 检查黑名单模式
 	var blocked_patterns: Array[String] = ["..", "~", "$", "|", ";", "`", "&&", "||"]
 	for pattern in blocked_patterns:
 		if path.contains(pattern):
 			return false
-	
+
 	# 检查路径长度
 	if path.length() > 4096:
 		return false
-	
+
 	return true
 
 # 清理路径（根据mcp-builder安全最佳实践）
 static func sanitize_path(path: String) -> String:
 	var sanitized: String = path.replace("..", "").replace("~", "")
-	
+
 	if not sanitized.begins_with("res://") and not sanitized.begins_with("user://"):
 		sanitized = "res://" + sanitized.lstrip("/")
-	
+
 	return sanitized
 
 # 生成唯一ID
@@ -270,25 +270,25 @@ class MCPLogger:
 	var level: int = LogLevel.INFO
 	var prefix: String = "[MCP]"
 	var _log_callback: Callable = Callable()
-	
+
 	func set_log_callback(callback: Callable) -> void:
 		_log_callback = callback
-	
+
 	func error(message: String) -> void:
 		if level >= LogLevel.ERROR:
 			if _log_callback.is_valid():
 				_log_callback.call("ERROR", prefix + "[ERROR] " + message)
-	
+
 	func warn(message: String) -> void:
 		if level >= LogLevel.WARN:
 			if _log_callback.is_valid():
 				_log_callback.call("WARN", prefix + "[WARN] " + message)
-	
+
 	func info(message: String) -> void:
 		if level >= LogLevel.INFO:
 			if _log_callback.is_valid():
 				_log_callback.call("INFO", prefix + "[INFO] " + message)
-	
+
 	func debug(message: String) -> void:
 		if level >= LogLevel.DEBUG:
 			if _log_callback.is_valid():

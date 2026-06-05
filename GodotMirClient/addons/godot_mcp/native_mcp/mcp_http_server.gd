@@ -101,9 +101,9 @@ func start() -> bool:
 			_log_callback.call("ERROR", error_msg)
 		push_error(error_msg)
 		return false
-	
+
 	_tcp_server = TCPServer.new()
-	
+
 	var error: Error = _tcp_server.listen(_port)
 	if error != OK:
 		var error_msg: String = "Failed to listen on port " + str(_port) + ": " + str(error)
@@ -111,15 +111,15 @@ func start() -> bool:
 		if _log_callback.is_valid():
 			_log_callback.call("ERROR", error_msg)
 		return false
-	
+
 	_active = true
 	_thread = Thread.new()
 	_thread.start(_http_server_loop)
-	
+
 	server_started.emit()
 	if _log_callback.is_valid():
 		_log_callback.call("INFO", "Server started on port " + str(_port))
-	
+
 	return true
 
 func _check_port_conflict(port: int) -> String:
@@ -213,24 +213,24 @@ func _resolve_process_name_linux(pid: String) -> String:
 ## 停止 HTTP 服务器
 func stop() -> void:
 	_active = false
-	
+
 	# 停止 TCP 服务器（不再接受新连接）
 	if _tcp_server:
 		_tcp_server.stop()
 		_tcp_server = null
-	
+
 	# 等待线程结束（必须在线程退出后再修改共享数据）
 	if _thread and _thread.is_alive():
 		_thread.wait_to_finish()
 	_thread = null
-	
+
 	# 线程已退出，安全清理连接
 	for peer in _connections:
 		if peer and peer.get_status() == StreamPeerTCP.STATUS_CONNECTED:
 			peer.disconnect_from_host()
-	
+
 	_connections.clear()
-	
+
 	server_stopped.emit()
 	if _log_callback.is_valid():
 		_log_callback.call("INFO", "Server stopped")
@@ -249,13 +249,13 @@ func is_running() -> bool:
 func _http_server_loop() -> void:
 	if _log_callback.is_valid():
 		_log_callback.call("INFO", "Server loop started")
-	
+
 	var last_keepalive: int = Time.get_ticks_msec()
-	
+
 	while _active:
 		if not _tcp_server:
 			break
-		
+
 		# 检查新连接
 		var peer: StreamPeerTCP = null
 		if _tcp_server.is_connection_available():
@@ -264,11 +264,11 @@ func _http_server_loop() -> void:
 			_connections.append(peer)
 			if _log_callback.is_valid():
 				_log_callback.call("INFO", "New connection: " + str(peer.get_status()))
-		
+
 		# 处理所有活跃连接（复制一份避免并发修改）
 		var disconnected: Array[StreamPeerTCP] = []
 		var current_connections: Array[StreamPeerTCP] = _connections.duplicate()
-		
+
 		for p in current_connections:
 			if not _active:
 				break
@@ -277,42 +277,42 @@ func _http_server_loop() -> void:
 				if _sse_connections.has(p):
 					_close_sse_connection(p)
 				continue
-			
+
 			if p.get_available_bytes() > 0:
 				_handle_http_request(p)
-		
+
 		# 移除已断开的连接
 		for d in disconnected:
 			_connections.erase(d)
-		
+
 		# 处理 SSE 连接的心跳
 		var current_time: int = Time.get_ticks_msec()
 		if current_time - last_keepalive > 30000:
 			_send_sse_keepalive()
 			last_keepalive = current_time
-		
+
 		# 避免 CPU 占用过高
 		OS.delay_msec(10)
-	
+
 	# 清理所有 SSE 连接
 	_cleanup_all_sse_connections()
-	
+
 	if _log_callback.is_valid():
 		_log_callback.call("INFO", "Server loop stopped")
 
 ## 发送 SSE 心跳
 func _send_sse_keepalive() -> void:
 	var disconnected_peers: Array[StreamPeerTCP] = []
-	
+
 	for peer in _sse_connections.keys():
 		var message: String = ": keepalive\r\n\r\n"
 		var error: Error = peer.put_data(message.to_utf8_buffer())
-		
+
 		if error != OK:
 			if _log_callback.is_valid():
 				_log_callback.call("WARN", "Failed to send keepalive, closing connection")
 			disconnected_peers.append(peer)
-	
+
 	# 清理断开的连接
 	for peer in disconnected_peers:
 		_close_sse_connection(peer)
@@ -322,10 +322,10 @@ func _cleanup_all_sse_connections() -> void:
 	var peers: Array = _sse_connections.keys()
 	for peer in peers:
 		_close_sse_connection(peer)
-	
+
 	_sse_connections.clear()
 	_sessions.clear()
-	
+
 	if _log_callback.is_valid():
 		_log_callback.call("INFO", "All SSE connections cleaned up")
 
@@ -336,22 +336,22 @@ func _handle_http_request(peer: StreamPeerTCP) -> void:
 	var start_time: int = Time.get_ticks_msec()
 	var headers_complete: bool = false
 	var content_length: int = -1
-	
+
 	while true:
 		var available: int = peer.get_available_bytes()
 		if available > 0:
 			var chunk: String = peer.get_utf8_string(available)
 			request += chunk
-		
+
 		if request.length() > MAX_REQUEST_SIZE:
 			_send_http_error(peer, 413, "Request too large. Maximum size is " + str(MAX_REQUEST_SIZE / 1024) + "KB")
 			return
-		
+
 		var current_time: int = Time.get_ticks_msec()
 		if current_time - start_time > REQUEST_TIMEOUT * 1000:
 			_send_http_error(peer, 408, "Request timeout. Please ensure the request is sent completely within " + str(REQUEST_TIMEOUT) + " seconds.")
 			return
-		
+
 		if not headers_complete:
 			if request.contains("\r\n\r\n"):
 				headers_complete = true
@@ -367,12 +367,12 @@ func _handle_http_request(peer: StreamPeerTCP) -> void:
 			else:
 				OS.delay_msec(1)
 				continue
-		
+
 		if headers_complete:
 			var header_end: int = request.find("\r\n\r\n")
 			var body: String = request.substr(header_end + 4)
 			var body_received: int = body.to_utf8_buffer().size()
-			
+
 			if content_length >= 0:
 				if body_received >= content_length:
 					break
@@ -381,18 +381,18 @@ func _handle_http_request(peer: StreamPeerTCP) -> void:
 					continue
 			else:
 				break
-	
+
 	if request.is_empty():
 		return
-	
+
 	# 解析 HTTP 请求
 	var parsed: Dictionary = _parse_http_request(request)
-	
+
 	# 检查认证（如果启用了认证）
 	if _auth_manager and not _auth_manager.validate_request(parsed["headers"]):
 		_send_http_error(peer, 401, "Unauthorized. Please provide a valid Bearer token in the Authorization header.")
 		return
-	
+
 	# 路由请求
 	match parsed["method"]:
 		"POST":
@@ -410,26 +410,26 @@ func _handle_http_request(peer: StreamPeerTCP) -> void:
 func _parse_http_request(raw: String) -> Dictionary:
 	var lines: PackedStringArray = raw.split("\r\n")
 	var request_line: PackedStringArray = lines[0].split(" ")
-	
+
 	var method: String = request_line[0]
 	var path: String = request_line[1]
 	var version: String = request_line[2] if request_line.size() > 2 else "HTTP/1.1"
-	
+
 	# 解析头部
 	var headers: Dictionary = {}
 	var body_start: int = -1
-	
+
 	for i in range(1, lines.size()):
 		if lines[i].is_empty():
 			body_start = i + 1
 			break
-		
+
 		var colon_pos: int = lines[i].find(":")
 		if colon_pos > 0:
 			var header_name: String = lines[i].left(colon_pos).to_lower()
 			var header_value: String = lines[i].substr(colon_pos + 1).strip_edges()
 			headers[header_name] = header_value
-	
+
 	# 提取正文
 	var body: String = ""
 	if body_start != -1 and body_start < lines.size():
@@ -437,7 +437,7 @@ func _parse_http_request(raw: String) -> Dictionary:
 		for i in range(body_start, lines.size()):
 			body_parts.append(lines[i])
 		body = "\r\n".join(body_parts)
-	
+
 	return {
 		"method": method,
 		"path": path,
@@ -454,31 +454,31 @@ func _handle_post_request(peer: StreamPeerTCP, parsed: Dictionary) -> void:
 	if parsed["path"] != "/mcp" and parsed["path"] != "/":
 		_send_http_error(peer, 404, "Not found. Please use path '/mcp' for MCP requests.")
 		return
-	
+
 	var content_type: String = parsed["headers"].get("content-type", "")
 	var body: String = parsed["body"]
-	
+
 	if not body.is_empty() and not content_type.contains("application/json"):
 		_send_http_error(peer, 415, "Unsupported media type. Please use 'Content-Type: application/json'.")
 		return
-	
+
 	if body.is_empty():
 		_send_http_error(peer, 400, "Empty request body")
 		return
-	
+
 	var json: JSON = JSON.new()
 	var parse_error: Error = json.parse(body)
-	
+
 	if parse_error != OK:
 		_send_http_error(peer, 400, "Invalid JSON: " + json.get_error_message())
 		return
-	
+
 	var message: Dictionary = json.get_data()
-	
+
 	var is_notification: bool = not message.has("id")
-	
+
 	call_deferred("_emit_message_received", message, peer)
-	
+
 	if is_notification:
 		_send_http_accepted(peer)
 
@@ -490,7 +490,7 @@ func _handle_get_request(peer: StreamPeerTCP, parsed: Dictionary) -> void:
 	if parsed["headers"].get("accept", "") == "text/event-stream":
 		_handle_sse_request(peer, parsed)
 		return
-	
+
 	# 普通 GET 请求，返回服务器信息
 	var info: Dictionary = {
 		"name": "Godot MCP Native",
@@ -502,7 +502,7 @@ func _handle_get_request(peer: StreamPeerTCP, parsed: Dictionary) -> void:
 			"sse": "/mcp (GET, SSE)"
 		}
 	}
-	
+
 	_send_http_response(peer, info)
 
 ## 处理 OPTIONS 请求（CORS 预检）
@@ -515,7 +515,7 @@ func _handle_options_request(peer: StreamPeerTCP, parsed: Dictionary) -> void:
 	response += "Access-Control-Allow-Headers: Content-Type, Authorization\r\n"
 	response += "Access-Control-Max-Age: 86400\r\n"
 	response += "\r\n"
-	
+
 	peer.put_data(response.to_utf8_buffer())
 	peer.disconnect_from_host()
 
@@ -527,10 +527,10 @@ func _handle_sse_request(peer: StreamPeerTCP, parsed: Dictionary) -> void:
 	if _auth_manager and not _auth_manager.validate_request(parsed["headers"]):
 		_send_http_error(peer, 401, "Unauthorized")
 		return
-	
+
 	# 生成会话 ID
 	var session_id: String = _generate_session_id()
-	
+
 	# 发送 SSE 响应头
 	var response_header: String = "HTTP/1.1 200 OK\r\n"
 	response_header += "Content-Type: text/event-stream\r\n"
@@ -538,19 +538,19 @@ func _handle_sse_request(peer: StreamPeerTCP, parsed: Dictionary) -> void:
 	response_header += "Connection: keep-alive\r\n"
 	response_header += "Access-Control-Allow-Origin: " + _cors_origin + "\r\n"
 	response_header += "\r\n"
-	
+
 	peer.put_data(response_header.to_utf8_buffer())
-	
+
 	# 发送初始消息
 	_send_sse_event(peer, "connected", {"session_id": session_id})
-	
+
 	# 保存 SSE 连接
 	_sse_connections[peer] = session_id
 	_sessions[session_id] = {
 		"peer": peer,
 		"created_at": Time.get_time_dict_from_system()
 	}
-	
+
 	if _log_callback.is_valid():
 		_log_callback.call("INFO", "SSE connection established: " + session_id)
 
@@ -573,7 +573,7 @@ func _send_sse_event(peer: StreamPeerTCP, event: String, data: Dictionary) -> vo
 	var message: String = "event: " + event + "\r\n"
 	message += "data: " + JSON.stringify(data) + "\r\n"
 	message += "\r\n"
-	
+
 	var error: Error = peer.put_data(message.to_utf8_buffer())
 	if error != OK:
 		if _log_callback.is_valid():
@@ -589,7 +589,7 @@ func _close_sse_connection(peer: StreamPeerTCP) -> void:
 		_sessions.erase(session_id)
 		if _log_callback.is_valid():
 			_log_callback.call("INFO", "SSE connection closed: " + session_id)
-	
+
 	peer.disconnect_from_host()
 
 ## 生成会话 ID
@@ -597,14 +597,14 @@ func _close_sse_connection(peer: StreamPeerTCP) -> void:
 func _generate_session_id() -> String:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.randomize()
-	
+
 	var chars: String = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	var session_id: String = ""
-	
+
 	for i in range(32):
 		var idx: int = rng.randi() % chars.length()
 		session_id += chars[idx]
-	
+
 	return session_id
 
 ## 设置远程访问配置
@@ -613,7 +613,7 @@ func _generate_session_id() -> String:
 func set_remote_config(allow_remote: bool, cors_origin: String = "*") -> void:
 	_allow_remote = allow_remote
 	_cors_origin = cors_origin
-	
+
 	if _log_callback.is_valid():
 		_log_callback.call("INFO", "Remote access config: allow_remote=" + str(allow_remote) + ", cors=" + cors_origin)
 
@@ -650,22 +650,22 @@ func send_response(response: Dictionary, context: Variant) -> void:
 func _send_http_response(peer: StreamPeerTCP, data: Dictionary) -> void:
 	var json_string: String = JSON.stringify(data)
 	var json_bytes: PackedByteArray = json_string.to_utf8_buffer()
-	
+
 	var http_response: String = "HTTP/1.1 200 OK\r\n"
 	http_response += "Content-Type: application/json; charset=utf-8\r\n"
 	http_response += "Content-Length: " + str(json_bytes.size()) + "\r\n"
 	http_response += "Access-Control-Allow-Origin: *\r\n"
 	http_response += "\r\n"
-	
+
 	var header_bytes: PackedByteArray = http_response.to_utf8_buffer()
 	var full_response: PackedByteArray = header_bytes + json_bytes
-	
+
 	var error: Error = peer.put_data(full_response)
 	if error != OK:
 		server_error.emit("Failed to send HTTP response: " + str(error))
 		if _log_callback.is_valid():
 			_log_callback.call("ERROR", "Failed to send response: " + str(error))
-	
+
 	peer.disconnect_from_host()
 
 ## 发送 HTTP 错误响应
@@ -693,15 +693,15 @@ func _send_http_error(peer: StreamPeerTCP, status_code: int, message: String) ->
 		500: status_text = "Internal Server Error"
 		501: status_text = "Not Implemented"
 		_: status_text = "Error"
-	
+
 	var response_header: String = "HTTP/1.1 " + str(status_code) + " " + status_text + "\r\n"
 	response_header += "Content-Type: text/plain; charset=utf-8\r\n"
 	response_header += "Content-Length: " + str(message.to_utf8_buffer().size()) + "\r\n"
 	response_header += "Access-Control-Allow-Origin: *\r\n"
 	response_header += "\r\n"
-	
+
 	peer.put_data(response_header.to_utf8_buffer() + message.to_utf8_buffer())
 	peer.disconnect_from_host()
-	
+
 	if _log_callback.is_valid():
 		_log_callback.call("WARN", "Error response sent: " + str(status_code) + " " + message)

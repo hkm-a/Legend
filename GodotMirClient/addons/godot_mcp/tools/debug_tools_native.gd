@@ -72,7 +72,7 @@ func register_tools(server_core: RefCounted) -> void:
 	_server_core = server_core
 	if server_core.has_signal("log_message"):
 		server_core.log_message.connect(_on_log_message)
-	
+
 	_register_get_editor_logs(server_core)
 	_register_execute_script(server_core)
 	_register_get_performance_metrics(server_core)
@@ -1290,23 +1290,23 @@ func _tool_install_runtime_probe(params: Dictionary) -> Dictionary:
 	var editor_interface: EditorInterface = _get_editor_interface()
 	if not editor_interface:
 		return {"error": "Editor interface not available"}
-	
+
 	var node_name: String = params.get("node_name", "MCPRuntimeProbe")
 	if node_name.is_empty():
 		return {"error": "node_name cannot be empty"}
-	
+
 	# Register the probe as an Autoload singleton via ProjectSettings.
 	# Using the "*" prefix marks it as a global singleton that survives
 	# scene changes and is never written into .tscn files.
 	var autoload_key: String = "autoload/" + node_name
 	var autoload_path: String = "*res://addons/godot_mcp/runtime/mcp_runtime_probe.gd"
-	
+
 	if ProjectSettings.has_setting(autoload_key):
 		return {"status": "already_installed", "node_path": node_name}
-	
+
 	ProjectSettings.set_setting(autoload_key, autoload_path)
 	ProjectSettings.save()
-	
+
 	return {"status": "success", "node_path": node_name, "autoload": true}
 
 func _register_remove_runtime_probe(server_core: RefCounted) -> void:
@@ -1328,10 +1328,10 @@ func _register_remove_runtime_probe(server_core: RefCounted) -> void:
 func _tool_remove_runtime_probe(params: Dictionary) -> Dictionary:
 	var node_name: String = params.get("node_name", "MCPRuntimeProbe")
 	var autoload_key: String = "autoload/" + node_name
-	
+
 	if not ProjectSettings.has_setting(autoload_key):
 		return {"status": "not_installed", "removed_node": ""}
-	
+
 	ProjectSettings.clear(autoload_key)
 	ProjectSettings.save()
 	return {"status": "success", "removed_node": node_name}
@@ -2621,12 +2621,12 @@ func _tool_await_runtime_condition(params: Dictionary) -> Dictionary:
 	var expression: String = params.get("expression", "")
 	if expression.is_empty():
 		return {"error": "Missing required parameter: expression"}
-	
+
 	var timeout_ms: int = maxi(int(params.get("timeout_ms", 10000)), 100)
 	var poll_interval_ms: int = maxi(int(params.get("poll_interval_ms", 500)), 50)
 	var deadline_ms: int = Time.get_ticks_msec() + timeout_ms
 	var attempts: int = 0
-	
+
 	while Time.get_ticks_msec() < deadline_ms:
 		attempts += 1
 		var result: Dictionary = await _tool_evaluate_runtime_expression(params)
@@ -2650,7 +2650,7 @@ func _tool_await_runtime_condition(params: Dictionary) -> Dictionary:
 				await tree.process_frame
 			else:
 				OS.delay_msec(poll_interval_ms)
-	
+
 	# Timeout reached
 	var last_result: Dictionary = await _tool_evaluate_runtime_expression(params)
 	var last_value: Variant = last_result.get("value", null) if not last_result.has("error") else null
@@ -2963,7 +2963,7 @@ func _get_runtime_logs(types: Array, count: int, offset: int, order: String) -> 
 func _register_execute_script(server_core: RefCounted) -> void:
 	var tool_name: String = "execute_script"
 	var description: String = "Execute a GDScript expression or statement. Uses Godot's Expression class for safe evaluation."
-	
+
 	# inputSchema
 	var input_schema: Dictionary = {
 		"type": "object",
@@ -2979,7 +2979,7 @@ func _register_execute_script(server_core: RefCounted) -> void:
 		},
 		"required": ["code"]
 	}
-	
+
 	# outputSchema
 	var output_schema: Dictionary = {
 		"type": "object",
@@ -2989,7 +2989,7 @@ func _register_execute_script(server_core: RefCounted) -> void:
 			"error": {"type": "string"}
 		}
 	}
-	
+
 	# annotations
 	var annotations: Dictionary = {
 		"readOnlyHint": false,
@@ -2997,7 +2997,7 @@ func _register_execute_script(server_core: RefCounted) -> void:
 		"idempotentHint": false,
 		"openWorldHint": false
 	}
-	
+
 	# 注册工具
 	server_core.register_tool(tool_name, description, input_schema,
 						  Callable(self, "_tool_execute_script"),
@@ -3006,10 +3006,10 @@ func _register_execute_script(server_core: RefCounted) -> void:
 func _tool_execute_script(params: Dictionary) -> Dictionary:
 	var code: String = params.get("code", "")
 	var bind_objects: Dictionary = params.get("bind_objects", {})
-	
+
 	if code.is_empty():
 		return {"error": "Missing required parameter: code"}
-	
+
 	# Auto-detect multi-line code and delegate to execute_editor_script path.
 	# Capture the last output item as "result" so the response format is
 	# consistent with the single-line Expression path.
@@ -3021,7 +3021,7 @@ func _tool_execute_script(params: Dictionary) -> Dictionary:
 		elif editor_result.get("status") == "success":
 			editor_result["result"] = ""
 		return editor_result
-	
+
 	var expression: Expression = Expression.new()
 
 	var bind_names: PackedStringArray = []
@@ -3060,13 +3060,13 @@ func _tool_execute_script(params: Dictionary) -> Dictionary:
 	_execution_mutex.lock()
 	var result: Variant = expression.execute(bind_values, base_instance, true)
 	_execution_mutex.unlock()
-	
+
 	if expression.has_execute_failed():
 		return {
 			"status": "error",
 			"error": "Execution failed: " + expression.get_error_text()
 		}
-	
+
 	return {
 		"status": "success",
 		"result": str(result)
@@ -3079,13 +3079,13 @@ func _tool_execute_script(params: Dictionary) -> Dictionary:
 func _register_get_performance_metrics(server_core: RefCounted) -> void:
 	var tool_name: String = "get_performance_metrics"
 	var description: String = "Get performance metrics including FPS, memory usage, and object counts."
-	
+
 	# inputSchema
 	var input_schema: Dictionary = {
 		"type": "object",
 		"properties": {}
 	}
-	
+
 	# outputSchema
 	var output_schema: Dictionary = {
 		"type": "object",
@@ -3096,7 +3096,7 @@ func _register_get_performance_metrics(server_core: RefCounted) -> void:
 			"memory_usage_mb": {"type": "number"}
 		}
 	}
-	
+
 	# annotations - readOnlyHint = true
 	var annotations: Dictionary = {
 		"readOnlyHint": true,
@@ -3104,7 +3104,7 @@ func _register_get_performance_metrics(server_core: RefCounted) -> void:
 		"idempotentHint": true,
 		"openWorldHint": false
 	}
-	
+
 	# 注册工具
 	server_core.register_tool(tool_name, description, input_schema,
 						  Callable(self, "_tool_get_performance_metrics"),
@@ -3116,10 +3116,10 @@ func _tool_get_performance_metrics(params: Dictionary) -> Dictionary:
 	var object_count: int = Performance.get_monitor(Performance.OBJECT_COUNT)
 	var resource_count: int = Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)
 	var memory_usage: int = Performance.get_monitor(Performance.MEMORY_STATIC)  # 静态内存
-	
+
 	# 转换为MB
 	var memory_mb: float = memory_usage / 1024.0 / 1024.0
-	
+
 	return {
 		"fps": fps,
 		"object_count": object_count,
@@ -3134,7 +3134,7 @@ func _tool_get_performance_metrics(params: Dictionary) -> Dictionary:
 func _register_debug_print(server_core: RefCounted) -> void:
 	var tool_name: String = "debug_print"
 	var description: String = "Print a debug message to the Godot output console."
-	
+
 	# inputSchema
 	var input_schema: Dictionary = {
 		"type": "object",
@@ -3150,7 +3150,7 @@ func _register_debug_print(server_core: RefCounted) -> void:
 		},
 		"required": ["message"]
 	}
-	
+
 	# outputSchema
 	var output_schema: Dictionary = {
 		"type": "object",
@@ -3159,7 +3159,7 @@ func _register_debug_print(server_core: RefCounted) -> void:
 			"printed_message": {"type": "string"}
 		}
 	}
-	
+
 	# annotations
 	var annotations: Dictionary = {
 		"readOnlyHint": false,
@@ -3167,7 +3167,7 @@ func _register_debug_print(server_core: RefCounted) -> void:
 		"idempotentHint": true,
 		"openWorldHint": false
 	}
-	
+
 	# 注册工具
 	server_core.register_tool(tool_name, description, input_schema,
 						  Callable(self, "_tool_debug_print"),
@@ -3177,21 +3177,21 @@ func _tool_debug_print(params: Dictionary) -> Dictionary:
 	# 参数提取
 	var message: String = params.get("message", "")
 	var category: String = params.get("category", "")
-	
+
 	# 参数验证
 	if message.is_empty():
 		return {"error": "Missing required parameter: message"}
-	
+
 	# 构建打印消息
 	var full_message: String
 	if category.is_empty():
 		full_message = "[MCP Debug] " + message
 	else:
 		full_message = "[" + category + "] " + message
-	
+
 	# 输出到Godot控制台
 	printerr(full_message)
-	
+
 	return {
 		"status": "success",
 		"printed_message": full_message
