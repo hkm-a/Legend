@@ -1,0 +1,5 @@
+[
+  {"id":1,"name":"基本剑术","spell":"Fencing","required_class":0,"required_level":1,"mp_cost":0,"base_damage":0,"damage_factor":1.5,"icon":1,"description":"被动技能，提升准确和攻击力","is_passive":true,"range":0},
+  {"id":31,"name":"火球术","spell":"FireBall","required_class":1,"required_level":7,"mp_cost":20,"base_damage":10,"damage_factor":2.0,"icon":31,"description":"发射一枚火球攻击目标","is_passive":false,"range":6},
+  {"id":61,"name":"治愈术","spell":"Healing","required_class":2,"required_level":4,"mp_cost":15,"base_damage":15,"damage_factor":1.8,"icon":61,"description":"恢复自身HP","is_passive":false,"range":0}
+]

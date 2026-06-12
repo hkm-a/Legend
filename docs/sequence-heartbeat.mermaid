@@ -1,0 +1,29 @@
+sequenceDiagram
+    participant CM as ConnectionManager (TS)
+    participant Codec as PacketCodec (TS)
+    participant WS as WebSocket
+    participant Sess as ClientSession (Rust)
+    participant Timer as 心跳定时器
+
+    Note over CM,Timer: 客户端每 5 秒发送 KeepAlive
+    loop 每 5 秒
+        Timer->>CM: 触发心跳
+        CM->>Codec: encode(ClientPacketIds.KeepAlive, empty)
+        Codec-->>CM: ArrayBuffer(4 bytes)
+        CM->>WS: send(binary frame)
+        WS->>Sess: onmessage
+        Sess->>Sess: decode → KeepAlive
+        Sess->>Sess: 更新 last_keepalive 时间
+
+        Note over Sess,WS: 服务端回复 KeepAlive
+        Sess->>Sess: encode ServerPacket(KeepAlive)
+        Sess->>WS: send(binary frame)
+        WS-->>CM: onmessage
+        CM->>Codec: decode(buffer)
+        Codec-->>CM: {header: {packet_id: KeepAlive}}
+        CM->>CM: 重置心跳超时计数
+    end
+
+    Note over CM,Sess: 如果 15 秒无回复
+    CM->>CM: reconnect_attempts++
+    CM->>CM: schedule_reconnect()

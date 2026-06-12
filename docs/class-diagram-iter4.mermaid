@@ -1,0 +1,332 @@
+classDiagram
+    %% ===== 服务端核心 =====
+    class WorldState {
+        +MapManager map_manager
+        +MonsterManager monster_manager
+        +ItemManager item_manager
+        +NpcManager npc_manager
+        +Arc~SessionManager~ session_manager
+        +u64 tick_rate_ms
+        +start_tick_loop()
+    }
+
+    class SessionState {
+        +i64 account_id
+        +bool authenticated
+        +Option~i64~ character_id
+        +u16 map_id
+        +(i32,i32) location
+        +MirDirection direction
+        +String character_name
+        +u16 level
+        +u32 current_hp
+        +u32 current_mp
+        +u32 max_hp
+        +u32 max_mp
+        +u64 experience
+        +u64 gold
+        +EquipmentManager equipment
+        +SkillManager skills
+        +Option~u16~ current_npc_id
+        +Instant last_attack_time
+    }
+
+    class SessionManager {
+        +add(stream, config, router) u32
+        +remove(session_id)
+        +get_state(session_id) SessionState
+        +update_state(session_id, updater)
+        +broadcast_to_map(map_id, exclude, data)
+    }
+
+    %% ===== NPC + 商店 =====
+    class NpcManager {
+        +HashMap~u16, NpcTemplate~ templates
+        +HashMap~u16, Vec~u16~~ npcs_by_map
+        +load_templates(path)
+        +get_npcs_near(map_id, x, y, range) Vec~&NpcTemplate~
+        +get_template(id) Option~&NpcTemplate~
+    }
+
+    class NpcTemplate {
+        +u16 id
+        +String name
+        +u16 map_id
+        +i32 x
+        +i32 y
+        +u16 image
+        +ShopType shop_type
+        +Vec~u16~ selling_items
+    }
+
+    class ShopSystem {
+        +buy_item(npc, item_template, gold, inventory) ShopResult
+        +sell_item(inv_slot, item_template, gold, inventory, slot) ShopResult
+    }
+
+    class ShopType {
+        <<enumeration>>
+        BuyOnly
+        SellOnly
+        BuyAndSell
+        Repair
+    }
+
+    %% ===== 装备系统 =====
+    class EquipmentManager {
+        -[Option~EquippedItem~; 14] slots
+        +equip(inv_slot, item, template) EquipmentResult
+        +unequip(equip_slot, inventory) EquipmentResult
+        +calculate_stats(base_level, item_manager) PlayerStats
+        +apply_durability_damage(item_manager) Vec~(usize, i32)~
+    }
+
+    class EquippedItem {
+        +i64 uid
+        +u16 item_id
+        +i32 durability
+        +i32 max_durability
+    }
+
+    class PlayerStats {
+        +i32 dc_min
+        +i32 dc_max
+        +i32 mc_min
+        +i32 mc_max
+        +i32 sc_min
+        +i32 sc_max
+        +i32 ac
+        +i32 mac
+        +u32 accuracy
+        +u32 agility
+    }
+
+    class EquipmentSlot {
+        <<enumeration>>
+        Weapon=0
+        Armour=1
+        Helmet=2
+        Torch=3
+        Necklace=4
+        BraceletL=5
+        BraceletR=6
+        RingL=7
+        RingR=8
+        Amulet=9
+        Belt=10
+        Boots=11
+        Stone=12
+        Mount=13
+    }
+
+    %% ===== 技能系统 =====
+    class SkillManager {
+        +HashMap~u16, SkillState~ skills
+        +HashMap~u16, SkillTemplate~ templates
+        +learn_skill(spell_id, player_level, player_class) SkillResult
+        +use_skill(spell_id, current_mp) SkillResult
+        +get_effect(spell_id) Option~SkillEffect~
+        +get_learned_skills() Vec~&SkillState~
+    }
+
+    class SkillState {
+        +u16 spell_id
+        +u8 level
+        +u32 proficiency
+    }
+
+    class SkillTemplate {
+        +u16 id
+        +String name
+        +Spell spell
+        +MirClass required_class
+        +u16 required_level
+        +u32 mp_cost
+        +i32 base_damage
+        +f64 damage_factor
+        +u16 icon
+        +String description
+        +bool is_passive
+        +i32 range
+    }
+
+    class SkillEffects {
+        +fireball_damage(mc, skill_level) i32
+        +healing_amount(sc, skill_level) u32
+        +fencing_bonus(skill_level) (i32, i32)
+    }
+
+    class Spell {
+        <<enumeration>>
+        Fencing=1
+        FireBall=31
+        Healing=61
+    }
+
+    %% ===== 怪物扩展 =====
+    class MonsterTemplate {
+        +u16 id
+        +String name
+        +u16 level
+        +u32 max_hp
+        +u32 max_mp
+        +StatRange dc
+        +u32 ac
+        +u32 mac
+        +u32 accuracy
+        +u32 agility
+        +u32 exp
+        +u64 attack_speed
+        +u64 move_speed
+        +u16 image
+        +MonsterAiType ai_type
+    }
+
+    class MonsterAiType {
+        <<enumeration>>
+        Simple
+        MeleeChase
+        PatrolFlee
+        AggressiveChase
+        BerserkChase
+    }
+
+    class ItemTemplate {
+        +u16 id
+        +String name
+        +ItemType item_type
+        +u16 level
+        +u32 hp_restore
+        +u32 mp_restore
+        +u32 weight
+        +u32 stack_size
+        +u32 price
+        +u16 image
+        +i32 required_class
+        +u16 required_level
+        +String description
+        +i32 dc_min
+        +i32 dc_max
+        +i32 mc_min
+        +i32 mc_max
+        +i32 sc_min
+        +i32 sc_max
+        +i32 ac
+        +i32 mac
+        +u32 accuracy
+        +u32 agility
+        +u32 durability
+    }
+
+    class DropConfig {
+        +u16 monster_id
+        +Vec~DropRoll~ rolls
+    }
+
+    class DropRoll {
+        +u16 item_id
+        +f64 prob
+        +u32 min
+        +u32 max
+    }
+
+    %% ===== 客户端 =====
+    class GameWorldState {
+        +number mapId
+        +number mapWidth
+        +number mapHeight
+        +TileData[] tiles
+        +PlayerInfo player
+        +Map~number, MonsterInfo~ monsters
+        +Map~number, GroundItemInfo~ groundItems
+        +Map~number, PlayerInfo~ otherPlayers
+        +InventoryItem[] inventory
+        +ChatMessage[] chatMessages
+        +number currentHp
+        +number maxHp
+        +number currentMp
+        +number maxMp
+        +number experience
+        +number maxExperience
+        +number level
+        +number gold
+        +boolean isInventoryOpen
+        +boolean isCharacterOpen
+        +boolean isSkillOpen
+        +boolean isSettingsOpen
+        +boolean shopOpen
+        +ShopInfo shopInfo
+        +EquipmentInfo equipment
+        +PlayerStats playerStats
+        +SkillInfo[] skills
+        +boolean isDead
+    }
+
+    class ShopInfo {
+        +string npcName
+        +number npcId
+        +ShopGoodsItem[] goods
+        +string shopType
+    }
+
+    class EquipmentInfo {
+        +EquippedItemInfo weapon
+        +EquippedItemInfo armour
+        +EquippedItemInfo helmet
+        +EquippedItemInfo necklace
+        +EquippedItemInfo ringL
+        +EquippedItemInfo ringR
+        +EquippedItemInfo braceletL
+        +EquippedItemInfo braceletR
+        +EquippedItemInfo belt
+        +EquippedItemInfo boots
+        +EquippedItemInfo stone
+    }
+
+    class PlayerStats {
+        +number dcMin
+        +number dcMax
+        +number mcMin
+        +number mcMax
+        +number scMin
+        +number scMax
+        +number ac
+        +number mac
+        +number accuracy
+        +number agility
+    }
+
+    class SkillInfo {
+        +number spellId
+        +string name
+        +number level
+        +number proficiency
+        +number maxProficiency
+        +number mpCost
+        +number icon
+        +number requiredLevel
+        +boolean isPassive
+        +string description
+        +boolean isLearned
+    }
+
+    %% ===== 关系 =====
+    WorldState --> NpcManager
+    WorldState --> SessionManager
+    SessionManager --> SessionState
+    SessionState --> EquipmentManager
+    SessionState --> SkillManager
+    NpcManager --> NpcTemplate
+    NpcTemplate --> ShopType
+    ShopSystem --> NpcTemplate
+    ShopSystem --> ItemTemplate
+    EquipmentManager --> EquipmentSlot
+    EquipmentManager --> EquippedItem
+    EquipmentManager --> PlayerStats
+    SkillManager --> SkillState
+    SkillManager --> SkillTemplate
+    SkillTemplate --> Spell
+    SkillEffects --> Spell
+    MonsterTemplate --> MonsterAiType
+    ItemTemplate ..> EquipmentSlot : maps to via item_type
+    DropConfig --> DropRoll

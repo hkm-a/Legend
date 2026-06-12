@@ -1,0 +1,158 @@
+classDiagram
+    class SessionState {
+        +account_id: i64
+        +authenticated: bool
+        +character_id: Option~i64~
+        +map_id: i32
+        +location: Point
+        +direction: MirDirection
+    }
+
+    class Map {
+        +id: u16
+        +width: u16
+        +height: u16
+        +title: String
+        +filename: String
+        +tiles: Vec~Tile~
+        +connections: Vec~MapConnection~
+        +spawn_points: Vec~Point~
+        +monster_spawns: Vec~MonsterSpawnConfig~
+        +safe_zone: Option~Rect~
+        +get_tile(x, y) -> Option~&Tile~
+        +is_walkable(x, y) -> bool
+        +is_safe_zone(x, y) -> bool
+    }
+
+    class Tile {
+        +attr: CellAttribute
+        +is_safe_zone: bool
+    }
+
+    class MapConnection {
+        +source_x: i32
+        +source_y: i32
+        +target_map_id: u16
+        +target_x: i32
+        +target_y: i32
+    }
+
+    class MonsterSpawnConfig {
+        +monster_type: u16
+        +spawn_x: i32
+        +spawn_y: i32
+        +count: u8
+        +spawn_interval_ms: u64
+        +wander_range: u8
+        +chase_range: u8
+    }
+
+    class MapManager {
+        -maps: HashMap~u16, Map~
+        +load_map(path) -> Result
+        +get_map(id) -> Option~&Map~
+        +get_connection(x, y, map_id) -> Option~&MapConnection~
+    }
+
+    class MonsterTemplate {
+        +id: u16
+        +name: String
+        +level: u16
+        +max_hp: u32
+        +max_mp: u32
+        +dc: StatRange
+        +ac: StatRange
+        +mac: StatRange
+        +exp: u32
+        +attack_speed: u16
+        +move_speed: u16
+        +drop_table: Vec~DropEntry~
+    }
+
+    class Monster {
+        +object_id: u32
+        +template_id: u16
+        +template: Arc~MonsterTemplate~
+        +current_hp: i32
+        +current_mp: i32
+        +location: Point
+        +direction: MirDirection
+        +spawn_point: Point
+        +state: MonsterState
+        +target_id: Option~u32~
+        +last_attack_time: Instant
+        +last_move_time: Instant
+        +is_alive() -> bool
+        +take_damage(amount) -> bool
+        +distance_to(pos) -> i32
+    }
+
+    class MonsterManager {
+        -monsters: HashMap~u32, Monster~
+        -templates: HashMap~u16, MonsterTemplate~
+        -map_monsters: HashMap~u16, Vec~u32~~
+        -next_id: AtomicU32
+        +load_templates(path) -> Result
+        +spawn(map_id, config) -> Option~u32~
+        +tick(dt) -> Vec~MonsterEvent~
+        +get_monsters_on_map(map_id) -> Vec~&Monster~
+        +get_monster(id) -> Option~&Monster~
+        +remove_monster(id)
+    }
+
+    class CombatSystem {
+        +process_attack(attacker_id, target_id, direction, spell) -> CombatResult
+        +calculate_damage(dc, ac, accuracy, agility) -> DamageResult
+        +calculate_exp(attacker_level, monster_level, monster_exp) -> u32
+    }
+
+    class CombatResult {
+        +hit: bool
+        +damage: i32
+        +damage_type: DamageType
+        +target_dead: bool
+        +exp_gained: u32
+    }
+
+    class ItemTemplate {
+        +id: u16
+        +name: String
+        +item_type: ItemType
+        +weight: u8
+        +required_class: RequiredClass
+        +required_level: u16
+        +stats: Stats
+        +price: u32
+        +stack_size: u16
+        +image: u16
+        +description: String
+    }
+
+    class UserItem {
+        +uid: i64
+        +item_id: u16
+        +slot: u8
+        +count: u16
+        +durability: u16
+        +max_durability: u16
+    }
+
+    class InventoryManager {
+        +get_items(character_id) -> Vec~UserItem~
+        +add_item(character_id, item_id, count) -> Result
+        +remove_item(character_id, uid, count) -> Result
+        +move_item(character_id, from_slot, to_slot) -> Result
+        +use_item(character_id, uid) -> Result
+        +drop_item(character_id, uid, count) -> Result
+    }
+
+    Map "1" --> "*" Tile
+    Map "1" --> "*" MapConnection
+    Map "1" --> "*" MonsterSpawnConfig
+    MapManager --> Map
+    Monster "1" --> "1" MonsterTemplate
+    MonsterManager --> Monster
+    MonsterManager --> MonsterTemplate
+    CombatSystem --> Monster
+    ItemTemplate <-- InventoryManager
+    InventoryManager --> UserItem

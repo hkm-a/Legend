@@ -1,0 +1,113 @@
+classDiagram
+    class ConnectionState {
+        <<enum>>
+        +Disconnected
+        +Connecting
+        +Connected
+        +Reconnecting
+    }
+
+    class ConnectionManager {
+        -url: string
+        -ws: WebSocket | null
+        -state: ConnectionState
+        -listeners: Map~string, Function[]~
+        -reconnect_timer: number | null
+        -reconnect_attempts: number
+        -heartbeat_interval: number | null
+        +connect(url: string): void
+        +disconnect(): void
+        +send(packet: ClientPacket): void
+        +on(event: string, cb: Function): void
+        +off(event: string, cb: Function): void
+        -on_open(): void
+        -on_message(ev: MessageEvent): void
+        -on_close(): void
+        -on_error(): void
+        -schedule_reconnect(): void
+        -start_heartbeat(): void
+        -stop_heartbeat(): void
+        -dispatch_packet(header: PacketHeader, payload: ArrayBuffer): void
+        +get_state(): ConnectionState
+    }
+    note for ConnectionManager "单例模式，管理 WS 生命周期"
+
+    class PacketCodec {
+        <<static>>
+        +encode(packet_id: u16, payload: ArrayBuffer): ArrayBuffer
+        +decode(buffer: ArrayBuffer): PacketParseResult
+        +create_header(packet_id: u16, length: u16): ArrayBuffer
+        +read_header(buffer: ArrayBuffer): PacketHeader
+    }
+    note for PacketCodec "DataView 实现，小端序"
+
+    class PacketHeader {
+        +packet_id: number
+        +length: number
+    }
+
+    class PacketParseResult {
+        +header: PacketHeader
+        +payload: ArrayBuffer
+    }
+
+    class ClientPacket {
+        <<interface>>
+        +packet_id(): number
+        +serialize(): ArrayBuffer
+    }
+
+    class WalkPacket {
+        +direction: MirDirection
+        +packet_id(): number
+        +serialize(): ArrayBuffer
+    }
+
+    class AttackPacket {
+        +direction: MirDirection
+        +spell: Spell
+        +packet_id(): number
+        +serialize(): ArrayBuffer
+    }
+
+    class ServerPacketTypes {
+        <<interface>>
+        +UserLocation: IUserLocation
+        +ObjectPlayer: IObjectPlayer
+        +Chat: IServerMessage
+        +Connected: IConnected
+    }
+
+    class IUserLocation {
+        <<interface>>
+        +location: {x: number, y: number}
+        +direction: MirDirection
+    }
+    class IObjectPlayer {
+        <<interface>>
+        +object_id: number
+        +name: string
+        +class: MirClass
+        +gender: MirGender
+        +location: {x: number, y: number}
+        +direction: MirDirection
+    }
+
+    class useConnection {
+        +state: ConnectionState
+        +connect(url: string): void
+        +disconnect(): void
+        +send(packet: ClientPacket): void
+        +on_server_packet(id: ServerPacketIds, handler): void
+    }
+    note for useConnection "React Hook，封装 ConnectionManager"
+
+    PacketCodec --> PacketHeader : 解析
+    PacketCodec --> PacketParseResult : 产出
+    ConnectionManager --> PacketCodec : 使用编解码
+    ConnectionManager --> ConnectionState : 维护状态
+    ClientPacket <|.. WalkPacket : 实现
+    ClientPacket <|.. AttackPacket : 实现
+    useConnection --> ConnectionManager : 包装
+    ServerPacketTypes --> IUserLocation : 定义
+    ServerPacketTypes --> IObjectPlayer : 定义

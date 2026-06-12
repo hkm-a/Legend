@@ -1,0 +1,6 @@
+[
+  {"id":1,"name":"药店老板","map_id":0,"x":14,"y":14,"image":10,"shop_type":"BuyAndSell","selling_items":[0,1,6,7]},
+  {"id":2,"name":"武器店老板","map_id":0,"x":24,"y":12,"image":11,"shop_type":"BuyAndSell","selling_items":[2]},
+  {"id":3,"name":"衣服店老板","map_id":0,"x":24,"y":16,"image":12,"shop_type":"BuyAndSell","selling_items":[3]},
+  {"id":4,"name":"杂货商","map_id":0,"x":12,"y":24,"image":13,"shop_type":"BuyAndSell","selling_items":[5]}
+]

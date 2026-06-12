@@ -1,0 +1,100 @@
+sequenceDiagram
+    participant C as 客户端 (TS)
+    participant H as GameLogicHandler
+    participant MM as MapManager
+    participant MoM as MonsterManager
+    participant CS as CombatSystem
+    participant IM as InventoryManager
+    participant WS as WorldState (Tick)
+    participant DB as SQLite
+
+    Note over C,DB: ============ 阶段1: StartGame 成功 → 进入游戏 ============
+    C->>H: StartGame (char_index)
+    H->>DB: 加载角色数据
+    H->>H: 设置 SessionState (character_id, map_id, location)
+    H->>C: StartGameResponse(result=0)
+    H->>C: UserInformation (角色属性/HP/MP/等级/经验/坐标)
+    H->>MM: get_map(角色.map_id)
+    MM->>C: MapInformation (宽高/title/filename + tile数据)
+    H->>C: UserLocation (出生点坐标)
+    H->>C: TimeOfDay (光照)
+    H->>MoM: get_monsters_on_map(map_id)
+    MoM->>C: ObjectMonster (当前地图所有怪物)
+    Note over C: 客户端切换到 GamePage<br/>启动 PixiJS 渲染<br/>渲染 tiles + 角色 + 怪物
+
+    Note over C,DB: ============ 阶段2: 玩家移动 ============
+    C->>H: Walk (direction)
+    H->>MM: 目标格是否 walkable?
+    MM-->>H: OK (可通行)
+    H->>H: 更新 SessionState.location
+    H->>C: UserLocation (新坐标)
+    H->>H: 广播给同地图其他玩家
+    H->>C: ObjectWalk (object_id, location, direction)
+    Note over C: 更新玩家位置<br/>摄像机跟随<br/>更新小地图绿点
+
+    Note over C,DB: ============ 阶段3: 攻击怪物 ============
+    C->>H: Attack (direction, target_id, spell)
+    H->>CS: process_attack(attacker_id, target_id, direction, spell)
+    CS->>CS: 验证距离(≤1格) + 冷却(≈500ms)
+    CS->>CS: 计算伤害: damage = max(1, DC.random() - target.AC/2)
+    CS->>C: ObjectAttack (攻击者动画)
+    alt 命中
+        CS->>C: DamageIndicator (伤害飘字)
+        CS->>C: ObjectStruck (怪物受击动画)
+        CS->>MoM: 更新怪物 HP
+        CS->>C: HealthChanged (攻击者 HP/MP)
+        alt 怪物死亡 (HP ≤ 0)
+            CS->>C: ObjectDied (怪物死亡动画)
+            CS->>CS: 计算经验值
+            CS->>C: GainExperience (获得经验)
+            CS->>MoM: 启动怪物刷新计时器
+            CS->>IM: 生成掉落物品
+            CS->>C: ObjectItem (地上掉落物)
+            alt 玩家升级
+                CS->>C: LevelChanged (新等级+属性)
+            end
+        else 怪物未死亡
+            CS->>MoM: 怪物反击 (怪物攻击玩家)
+            MoM->>C: ObjectAttack (怪物攻击动画)
+            CS->>C: DamageIndicator (玩家受击)
+            CS->>C: Struck (玩家受击)
+            CS->>C: HealthChanged (玩家HP更新)
+        end
+    else 未命中
+        CS->>C: DamageIndicator (Miss飘字)
+    end
+
+    Note over C,DB: ============ 阶段4: 拾取物品 ============
+    C->>H: PickUp (object_id)
+    H->>MM: 玩家与物品距离 ≤ 1?
+    H->>IM: add_item(character_id, item_id, 1)
+    IM->>DB: INSERT user_items
+    IM-->>H: 成功
+    H->>C: GainedItem (物品入背包)
+    H->>C: ObjectRemove (移除地上物品)
+    Note over C: 更新背包 UI<br/>显示"获得物品"提示
+
+    Note over C,DB: ============ 阶段5: 地图切换 ============
+    C->>H: Walk (走到边界连接点)
+    H->>MM: get_connection(当前坐标, 当前地图)
+    MM-->>H: target_map=1, target_x=10, target_y=10
+    H->>DB: 更新角色地图坐标
+    H->>MoM: get_monsters_on_map(target_map)
+    H->>C: MapChanged (新地图信息+tile数据)
+    H->>C: ObjectTeleportIn (传送效果)
+    H->>C: UserLocation (新坐标)
+    MoM->>C: ObjectMonster (新地图怪物列表)
+    Note over C: 加载新地图 tiles<br/>重新渲染场景<br/>显示传送特效<br/>更新小地图
+
+    Note over C,DB: ============ 阶段6: Tick 驱动 (每200ms) ============
+    WS->>MoM: tick(dt)
+    MoM->>MoM: 遍历所有活跃怪物
+    MoM->>MoM: 巡逻: 随机移动 2-4s间隔
+    MoM->>MoM: 追击: 玩家在5格内则向玩家移动
+    MoM->>MoM: 返回: 超出巡逻范围10格则返回出生点
+    MoM-->>C: ObjectWalk (怪物移动)
+    WS->>MM: 检查刷新计时器
+    MM->>MoM: spawn_monster(map_id, config)
+    MoM-->>C: ObjectMonster (新刷新的怪物)
+    WS->>WS: 安全区回血 (如有玩家在安全区)
+    WS-->>C: HealthChanged (回血后HP更新)

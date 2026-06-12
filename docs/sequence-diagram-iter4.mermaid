@@ -1,0 +1,99 @@
+sequenceDiagram
+    participant Client as 客户端 (React/PixiJS)
+    participant WS as WebSocket
+    participant Handler as GameLogicHandler
+    participant SM as SessionManager
+    participant NPC as NpcManager
+    participant Shop as ShopSystem
+    participant EQ as EquipmentManager
+    participant SK as SkillManager
+    participant CO as CombatSystem
+    participant DB as Database
+
+    Note over Client,DB: === NPC 商店购买流程 ===
+    Client->>WS: CallNPCPacket(npc_id)
+    WS->>Handler: on_call_npc(session_id, payload)
+    Handler->>SM: get_state(session_id)
+    Handler->>NPC: get_npcs_near(map_id, x, y, range)
+    NPC-->>Handler: Vec&lt;NpcTemplate&gt;
+    Handler->>SM: update_state(current_npc_id=npc.id)
+    Handler-->>WS: NPCGoodsPacket(goods_list)
+    WS-->>Client: NPCGoods [物品列表+价格]
+    
+    Client->>WS: BuyItemPacket(npc_id, item_id, count)
+    WS->>Handler: on_buy_item(session_id, payload)
+    Handler->>NPC: get_template(npc_id)
+    Handler->>Shop: buy_item(npc, template, gold, inventory)
+    Shop-->>Handler: ShopResult::Success
+    Handler->>SM: update_state(gold=new_gold)
+    Handler-->>WS: GainedItemPacket(item_id, name)
+    Handler-->>WS: LoseGoldPacket(price)
+    WS-->>Client: GainedItem + LoseGold
+    Note over Client: UI更新背包 & 金币
+
+    Note over Client,DB: === 装备穿戴流程 ===
+    Client->>WS: MoveItemPacket(from_slot=inv, to_slot=equip)
+    WS->>Handler: on_move_item(session_id, payload)
+    Handler->>SM: get_state(session_id)
+    Handler->>EQ: equip(inv_slot, item, template)
+    EQ-->>Handler: EquipmentResult::Success
+    EQ->>EQ: calculate_stats(level, item_manager)
+    EQ-->>Handler: PlayerStats
+    Handler->>SM: update_state(equipment=...)
+    Handler-->>WS: EquipSlotItemPacket(slot, item_info)
+    Handler-->>WS: BaseStatsInfoPacket(stats)
+    WS-->>Client: EquipSlotItem + BaseStatsInfo
+    Note over Client: UI更新装备位 & 属性面板
+
+    Note over Client,DB: === 技能使用流程（火球术） ===
+    Client->>WS: MagicKeyPacket(spell=FireBall, direction)
+    WS->>Handler: on_magic_key(session_id, payload)
+    Handler->>SM: get_state(session_id)
+    Handler->>SK: use_skill(FireBall, &current_mp)
+    SK-->>Handler: SkillResult::Success
+    Note over SK: 熟练度+1~3
+    SK->>SK: 检查是否升级
+    
+    alt 技能升级
+        SK-->>Handler: SkillLeveled(FireBall, Lv2)
+        Handler-->>WS: MagicLeveledPacket(FireBall, Lv2, prof)
+    end
+    
+    Handler->>CO: player_attack_monster(stats, target, ...)
+    CO->>CO: damage = fireball_damage(mc, skill_level)
+    CO-->>Handler: AttackResult
+    
+    Handler-->>WS: MagicCastPacket(object_id, FireBall, target)
+    Handler-->>WS: DamageIndicatorPacket(target, damage, Hit)
+    WS-->>Client: MagicCast + DamageIndicator
+    Note over Client: 渲染火球动画 & 伤害飘字
+
+    Note over Client,DB: === 安全区回血（Tick循环） ===
+    loop Every 10 ticks
+        Handler->>SM: get_states_on_map(map_id)
+        SM-->>Handler: Vec&lt;SessionState&gt;
+        loop each player
+            alt player in safe_zone
+                Handler->>SM: update_state(hp=min(max_hp, hp+regen))
+            end
+        end
+        Handler-->>WS: HealthChangedPacket(hp, mp)
+    end
+
+    Note over Client,DB: === 死亡处理流程 ===
+    CO->>CO: monster_attack_player → player HP <= 0
+    CO-->>Handler: AttackResult(target_alive=false)
+    Handler->>SM: update_state(current_hp=0)
+    Handler-->>WS: DeathPacket(player_id)
+    Handler-->>WS: HealthChangedPacket(0, mp)
+    
+    WS-->>Client: Death
+    Note over Client: 显示死亡画面
+    
+    Client->>WS: TownRevivePacket (回城复活)
+    WS->>Handler: on_town_revive(session_id)
+    Handler->>SM: update_state(hp=max_hp/2, map_id=0, location=safe_zone)
+    Handler-->>WS: UserInformationPacket (复活信息)
+    Handler-->>WS: MapChangedPacket(map_0)
+    WS-->>Client: UserInformation + MapChanged
+    Note over Client: UI恢复 & 地图加载

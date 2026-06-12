@@ -1,0 +1,9 @@
+[
+  {"monster_id":4,"item_id":0,"probability":0.3,"count":2},
+  {"monster_id":4,"item_id":2,"probability":0.05,"count":1},
+  {"monster_id":5,"item_id":1,"probability":0.2,"count":1},
+  {"monster_id":6,"item_id":2,"probability":0.3,"count":1},
+  {"monster_id":6,"item_id":3,"probability":0.15,"count":1},
+  {"monster_id":7,"item_id":3,"probability":0.4,"count":1},
+  {"monster_id":7,"item_id":0,"probability":0.5,"count":5}
+]

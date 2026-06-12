@@ -1,0 +1,10 @@
+[
+  {"id":0,"name":"金创药(小)","type":"Potion","level":1,"hp_restore":40,"mp_restore":0,"weight":1,"stack_size":99,"price":50,"image":0,"required_class":0,"required_level":0,"description":"恢复40点HP","durability":0,"mc_min":0,"mc_max":0,"sc_min":0,"sc_max":0},
+  {"id":1,"name":"魔法药(小)","type":"Potion","level":1,"hp_restore":0,"mp_restore":30,"weight":1,"stack_size":99,"price":40,"image":1,"required_class":0,"required_level":0,"description":"恢复30点MP","durability":0,"mc_min":0,"mc_max":0,"sc_min":0,"sc_max":0},
+  {"id":2,"name":"木剑","type":"Weapon","level":1,"dc_min":2,"dc_max":5,"ac":0,"mac":0,"weight":5,"stack_size":1,"price":100,"image":2,"required_class":0,"required_level":1,"description":"一把木制剑","durability":8000,"mc_min":0,"mc_max":0,"sc_min":0,"sc_max":0},
+  {"id":3,"name":"布衣","type":"Armour","level":1,"dc_min":0,"dc_max":0,"ac":2,"mac":1,"weight":3,"stack_size":1,"price":80,"image":3,"required_class":0,"required_level":1,"description":"一件布制上衣","durability":5000,"mc_min":0,"mc_max":0,"sc_min":0,"sc_max":0},
+  {"id":4,"name":"金币","type":"Nothing","level":1,"weight":0,"stack_size":65535,"price":1,"image":4,"required_class":0,"required_level":0,"description":"流通货币","durability":0,"mc_min":0,"mc_max":0,"sc_min":0,"sc_max":0},
+  {"id":5,"name":"蜡烛","type":"Torch","level":1,"weight":1,"stack_size":1,"price":10,"image":5,"required_class":0,"required_level":0,"description":"照亮黑暗","durability":3000,"mc_min":0,"mc_max":0,"sc_min":0,"sc_max":0},
+  {"id":6,"name":"金创药(中)","type":"Potion","level":1,"hp_restore":80,"mp_restore":0,"weight":1,"stack_size":6,"price":600,"image":7,"required_class":-1,"required_level":0,"ac":0,"mac":0,"dc_min":0,"dc_max":0,"mc_min":0,"mc_max":0,"sc_min":0,"sc_max":0,"accuracy":0,"agility":0,"durability":0,"description":""},
+  {"id":7,"name":"魔法药(中)","type":"Potion","level":1,"hp_restore":0,"mp_restore":80,"weight":1,"stack_size":6,"price":480,"image":8,"required_class":-1,"required_level":0,"ac":0,"mac":0,"dc_min":0,"dc_max":0,"mc_min":0,"mc_max":0,"sc_min":0,"sc_max":0,"accuracy":0,"agility":0,"durability":0,"description":""}
+]

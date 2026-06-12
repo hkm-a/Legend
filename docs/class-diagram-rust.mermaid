@@ -1,0 +1,172 @@
+classDiagram
+    %% ===== Shared/Packets =====
+    class Packet {
+        <<trait>>
+        +packet_id() u16
+        +read(buf: &mut Cursor~u8~) Result~Self~
+        +write(&self, buf: &mut Vec~u8~) Result~()~
+    }
+    note for Packet "所有具体包实现此 trait"
+
+    class PacketCodec {
+        +encode(packet: &dyn Packet) Vec~u8~
+        +decode(buf: &[u8]) Result~(u16, Vec~u8~)~
+        -read_header(buf: &[u8]) Result~(u16, u16)~
+    }
+    note for PacketCodec "PacketID + Length 解析"
+
+    class ServerPacketId {
+        <<enum u16>>
+        Connected = 0
+        ClientVersion = 1
+        Disconnect = 2
+        KeepAlive = 3
+        ... ~279 个
+    }
+    class ClientPacketId {
+        <<enum u16>>
+        ClientVersion = 0
+        Disconnect = 1
+        KeepAlive = 2
+        ... ~152 个
+    }
+
+    class ClientPacket {
+        <<trait>>
+        +packet_id() ClientPacketId
+    }
+    class ServerPacket {
+        <<trait>>
+        +packet_id() ServerPacketId
+    }
+
+    Packet <|.. ClientPacket
+    Packet <|.. ServerPacket
+
+    class WalkPacket {
+        +direction: MirDirection
+        +packet_id() ClientPacketId
+        +read(buf: &mut Cursor~u8~) Result~Self~
+        +write(&self, buf: &mut Vec~u8~) Result~()~
+    }
+    class AttackPacket {
+        +direction: MirDirection
+        +spell: Spell
+        +packet_id() ClientPacketId
+        +read(buf: &mut Cursor~u8~) Result~Self~
+        +write(&self, buf: &mut Vec~u8~) Result~()~
+    }
+    class ChatPacket {
+        +message: String
+        +packet_id() ClientPacketId
+        +read(buf: &mut Cursor~u8~) Result~Self~
+        +write(&self, buf: &mut Vec~u8~) Result~()~
+    }
+    class KeepAlivePacket {
+        +packet_id() ClientPacketId
+        +read(buf: &mut Cursor~u8~) Result~Self~
+        +write(&self, buf: &mut Vec~u8~) Result~()~
+    }
+    ClientPacket <|.. WalkPacket
+    ClientPacket <|.. AttackPacket
+    ClientPacket <|.. ChatPacket
+    ClientPacket <|.. KeepAlivePacket
+
+    class UserLocationPacket {
+        +location: Point
+        +direction: MirDirection
+        +packet_id() ServerPacketId
+        +read(buf: &mut Cursor~u8~) Result~Self~
+        +write(&self, buf: &mut Vec~u8~) Result~()~
+    }
+    class ObjectPlayerPacket {
+        +object_id: u32
+        +name: String
+        +class: MirClass
+        +gender: MirGender
+        +location: Point
+        +direction: MirDirection
+        +packet_id() ServerPacketId
+        +read(buf: &mut Cursor~u8~) Result~Self~
+        +write(&self, buf: &mut Vec~u8~) Result~()~
+    }
+    class ServerMessagePacket {
+        +message: String
+        +chat_type: ChatType
+        +packet_id() ServerPacketId
+        +read(buf: &mut Cursor~u8~) Result~Self~
+        +write(&self, buf: &mut Vec~u8~) Result~()~
+    }
+    class ConnectedPacket {
+        +packet_id() ServerPacketId
+        +read(buf: &mut Cursor~u8~) Result~Self~
+        +write(&self, buf: &mut Vec~u8~) Result~()~
+    }
+    ServerPacket <|.. UserLocationPacket
+    ServerPacket <|.. ObjectPlayerPacket
+    ServerPacket <|.. ServerMessagePacket
+    ServerPacket <|.. ConnectedPacket
+
+    class NetError {
+        <<enum>>
+        +IoError(std::io::Error)
+        +BinReadError(binrw::Error)
+        +InvalidPacketId(u16)
+        +ConnectionClosed
+        +PacketTooLarge(u16)
+    }
+
+    PacketCodec --> Packet : 使用
+    PacketCodec ..> NetError : 产生
+
+    %% ===== Server/Network =====
+    class SessionManager {
+        -sessions: HashMap~u32, ClientSessionHandle~
+        -next_id: AtomicU32
+        +add(connection: WebSocketStream) ClientSessionHandle
+        +remove(session_id: u32)
+        +broadcast(packet: &dyn ServerPacket)
+        +get(session_id: u32) Option~ClientSessionHandle~
+        +session_count() usize
+    }
+
+    class ClientSession {
+        -session_id: u32
+        -ws_stream: WebSocketStream
+        -rx: mpsc::Receiver~Vec~u8~~
+        +run() Result~()~
+        +handle_packet(packet_id: u16, payload: &[u8])
+        +send_raw(data: Vec~u8~)
+        -send_packet(packet: &dyn Packet)
+        +close()
+    }
+    note for ClientSession "一个 Tokio task 管理一个连接"
+
+    class ClientSessionHandle {
+        -session_id: u32
+        -tx: mpsc::Sender~Vec~u8~~
+        +send(packet: &dyn Packet)
+        +close()
+    }
+
+    class PacketRouter {
+        +register_handler(packet_id: u16, handler: fn(session, payload))
+        +dispatch(session_id: u32, packet_id: u16, payload: &[u8])
+    }
+    note for PacketRouter "注册表模式分发"
+
+    class GameLogicHandler {
+        +on_walk(session_id: u32, packet: WalkPacket)
+        +on_attack(session_id: u32, packet: AttackPacket)
+        +on_chat(session_id: u32, packet: ChatPacket)
+        +on_keep_alive(session_id: u32, packet: KeepAlivePacket)
+    }
+
+    SessionManager --> ClientSession : 管理
+    ClientSession --> ClientSessionHandle : 创建
+    SessionManager --> ClientSessionHandle : 返回给外部
+    ClientSession ..> PacketCodec : 使用
+    ClientSession ..> PacketRouter : 使用
+    PacketRouter --> GameLogicHandler : 路由到
+    GameLogicHandler ..> SessionManager : 通过 Handle 回发
+    ClientSessionHandle --> ClientSession : 通过 mpsc 通信

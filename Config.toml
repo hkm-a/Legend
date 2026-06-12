@@ -1,0 +1,16 @@
+[network]
+host = "0.0.0.0"
+port = 7000
+
+[database]
+path = "./data/mir2.db"
+
+[game]
+max_players = 500
+tick_rate_ms = 50
+map_dir = "data/maps"
+monster_data_path = "data/monsters.json"
+item_data_path = "data/items.json"
+npc_data_path = "data/npcs.json"
+skill_data_path = "data/skills.json"
+drops_table_path = "data/drops.json"
